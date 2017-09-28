@@ -48,7 +48,6 @@ namespace EagleEye.Extractor.Amazon
                         return sections;
                     })
                     .ToList();
-                //.ToDictionary(x => x.InnerText, x => x.Attributes["href"].Value);
 
                 return siteSections;
             }
