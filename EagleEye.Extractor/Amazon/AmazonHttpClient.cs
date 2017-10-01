@@ -4,6 +4,7 @@ using System.Linq;
 using System.Net.Http;
 using System.Security.Cryptography.X509Certificates;
 using System.Threading.Tasks;
+using EagleEye.Extractor.Extensions;
 using HtmlAgilityPack;
 
 namespace EagleEye.Extractor.Amazon
@@ -22,10 +23,7 @@ namespace EagleEye.Extractor.Amazon
         {
             using (var response = await GetAsync(_siteDirectoryUri))
             {
-                var html = await response.Content.ReadAsStringAsync();
-
-                var doc = new HtmlDocument();
-                doc.LoadHtml(html);
+                var doc = await response.Content.ReadAsHtmlDocumentAsync();
 
                 var siteSections = new List<SiteSection>();
 
@@ -64,10 +62,7 @@ namespace EagleEye.Extractor.Amazon
         {
             using (var response = await GetAsync(siteSection.Uri))
             {
-                var html = await response.Content.ReadAsStringAsync();
-
-                var doc = new HtmlDocument();
-                doc.LoadHtml(html);
+                var doc = await response.Content.ReadAsHtmlDocumentAsync();
 
                 var siteCategories = new List<SiteSubCategory>();
 
@@ -106,6 +101,28 @@ namespace EagleEye.Extractor.Amazon
                 }
 
                 return siteCategories;
+            }
+        }
+
+        public async Task<List<SiteProduct>> GetProductsAsync(Uri uri)
+        {
+            using (var response = await GetAsync(uri))
+            {
+                var doc = await response.Content.ReadAsHtmlDocumentAsync();
+
+                var container = doc.DocumentNode.SelectSingleNode("//div[@id='mainResults']");
+
+                var productLinks = container
+                    .Descendants("a")
+                    .Where(x => x.Attributes["class"].Value.Contains("s-access-detail-page"))
+                    .Select(x => new SiteProduct()
+                    {
+                        Name = x.Attributes["title"].Value,
+                        Uri = new Uri(x.Attributes["href"].Value)
+                    })
+                    .ToList();
+
+                return productLinks;
             }
         }
     }

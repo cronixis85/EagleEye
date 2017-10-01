@@ -9,6 +9,11 @@ namespace EagleEye.Extractor
     {
         public static void Main(string[] args)
         {
+            var isCompleted = RunWebScraper().Result;
+        }
+
+        private static async Task<bool> RunWebScraper()
+        {
             var httpClient = new AmazonHttpClient();
 
             var siteSections = httpClient.GetSiteSectionsAsync().Result;
@@ -32,10 +37,16 @@ namespace EagleEye.Extractor
                 "Credit & Payment Products"
             };
 
-            var siteSubCategories = siteSections
+            var getSiteSubcategories = siteSections
                 .Where(x => !excludedDepartments.Contains(x.Department))
-                .Select(x => httpClient.GetCategoriesAsync(x).Result)
+                .Select(x => httpClient.GetCategoriesAsync(x))
                 .ToArray();
+
+            await Task.WhenAll(getSiteSubcategories);
+
+            var subCategories = getSiteSubcategories.SelectMany(x => x.Result).ToArray();
+
+            return true;
         }
     }
 }
