@@ -2,10 +2,9 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Net.Http;
-using System.Security.Cryptography.X509Certificates;
 using System.Threading.Tasks;
 using EagleEye.Extractor.Extensions;
-using HtmlAgilityPack;
+using EagleEye.Extractor.Models;
 
 namespace EagleEye.Extractor.Amazon
 {
@@ -18,14 +17,14 @@ namespace EagleEye.Extractor.Amazon
         {
             BaseAddress = _baseUri;
         }
-        
-        public async Task<List<SiteSection>> GetSiteSectionsAsync()
+
+        public async Task<List<Section>> GetSectionsAsync()
         {
             using (var response = await GetAsync(_siteDirectoryUri))
             {
                 var doc = await response.Content.ReadAsHtmlDocumentAsync();
 
-                var siteSections = new List<SiteSection>();
+                var siteSections = new List<Section>();
 
                 var deptBoxes = doc.DocumentNode
                                    .SelectNodes("//div[@class='fsdDeptBox']");
@@ -42,11 +41,11 @@ namespace EagleEye.Extractor.Amazon
 
                         var sections = x.Descendants("a")
                                         .Where(n => n.Attributes["class"].Value == "a-link-normal fsdLink fsdDeptLink")
-                                        .Select(a => new SiteSection
+                                        .Select(a => new Section
                                         {
                                             Department = dept,
                                             Name = a.InnerText,
-                                            Uri = new Uri(_baseUri, a.Attributes["href"].Value)
+                                            Url = new Uri(_baseUri, a.Attributes["href"].Value).AbsoluteUri
                                         })
                                         .ToArray();
 
@@ -58,23 +57,23 @@ namespace EagleEye.Extractor.Amazon
             }
         }
 
-        public async Task<List<SiteSubCategory>> GetCategoriesAsync(SiteSection siteSection)
+        public async Task<List<SubCategory>> GetSubCategoriesAsync(Section siteSection)
         {
             using (var response = await GetAsync(siteSection.Uri))
             {
                 var doc = await response.Content.ReadAsHtmlDocumentAsync();
 
-                var siteCategories = new List<SiteSubCategory>();
+                var subCategories = new List<SubCategory>();
 
                 var categoryLinks = doc.DocumentNode.SelectNodes("//a[@class='list-item__category-link']");
 
                 if (categoryLinks == null)
-                    return siteCategories;
-                
-                var subCategoryWrappers = doc.DocumentNode.SelectNodes("//div[@class='sub-categories__list']");
+                    return subCategories;
+
+                var subCategoryWrappers = doc.DocumentNode.SelectNodes("//div[contains(@class, 'sub-categories__list')]");
 
                 if (subCategoryWrappers == null)
-                    return siteCategories;
+                    return subCategories;
 
                 foreach (var c in categoryLinks)
                 {
@@ -86,25 +85,25 @@ namespace EagleEye.Extractor.Amazon
                     if (subCategoryNode == null)
                         continue;
 
-                    siteCategories = subCategoryNode.Descendants("a")
-                                   .Select(x => new SiteSubCategory
-                                   {
-                                       Department = siteSection.Department,
-                                       Section = siteSection.Name,
-                                       Category = categoryName,
-                                       Name = x.InnerText.Replace("\n", "").Trim(),
-                                       Uri = new Uri(_baseUri, x.Attributes["href"].Value)
-                                   })
-                                   .ToList();
-                    
-                    siteCategories.AddRange(siteCategories);
+                    var subcats = subCategoryNode.Descendants("a")
+                                                 .Select(x => new SubCategory
+                                                 {
+                                                     Department = siteSection.Department,
+                                                     Section = siteSection.Name,
+                                                     Category = categoryName,
+                                                     Name = x.InnerText.Replace("\n", "").Trim(),
+                                                     Url = new Uri(_baseUri, x.Attributes["href"].Value).AbsoluteUri
+                                                 })
+                                                 .ToList();
+
+                    subCategories.AddRange(subcats);
                 }
 
-                return siteCategories;
+                return subCategories;
             }
         }
 
-        public async Task<List<SiteProduct>> GetProductsAsync(Uri uri)
+        public async Task<List<Product>> GetProductsAsync(Uri uri)
         {
             using (var response = await GetAsync(uri))
             {
@@ -115,10 +114,10 @@ namespace EagleEye.Extractor.Amazon
                 var productLinks = container
                     .Descendants("a")
                     .Where(x => x.Attributes["class"].Value.Contains("s-access-detail-page"))
-                    .Select(x => new SiteProduct()
+                    .Select(x => new Product
                     {
                         Name = x.Attributes["title"].Value,
-                        Uri = new Uri(x.Attributes["href"].Value)
+                        Url = new Uri(x.Attributes["href"].Value).AbsoluteUri
                     })
                     .ToList();
 
