@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Net.Http;
+using System.Threading;
 using System.Threading.Tasks;
 using EagleEye.Extractor.Extensions;
 using EagleEye.Extractor.Models;
@@ -10,6 +11,8 @@ namespace EagleEye.Extractor.Amazon
 {
     public class AmazonHttpClient : HttpClient
     {
+        private static readonly SemaphoreSlim Semaphore = new SemaphoreSlim(5);
+
         private readonly Uri _baseUri = new Uri("https://www.amazon.com");
         private readonly Uri _siteDirectoryUri = new Uri("/gp/site-directory/", UriKind.Relative);
 
@@ -88,10 +91,10 @@ namespace EagleEye.Extractor.Amazon
                     var subcats = subCategoryNode.Descendants("a")
                                                  .Select(x => new SubCategory
                                                  {
-                                                     Department = siteSection.Department,
-                                                     Section = siteSection.Name,
-                                                     Category = categoryName,
-                                                     Name = x.InnerText.Replace("\n", "").Trim(),
+                                                     Department = siteSection.Department.Clean(),
+                                                     Section = siteSection.Name.Clean(),
+                                                     Category = categoryName.Clean(),
+                                                     Name = x.InnerText.Clean(),
                                                      Url = new Uri(_baseUri, x.Attributes["href"].Value).AbsoluteUri
                                                  })
                                                  .ToList();
@@ -105,23 +108,42 @@ namespace EagleEye.Extractor.Amazon
 
         public async Task<List<Product>> GetProductsAsync(Uri uri)
         {
-            using (var response = await GetAsync(uri))
+            await Semaphore.WaitAsync(TimeSpan.FromHours(1));
+
+            try
             {
-                var doc = await response.Content.ReadAsHtmlDocumentAsync();
+                using (var response = await GetAsync(uri))
+                {
+                    var doc = await response.Content.ReadAsHtmlDocumentAsync();
 
-                var container = doc.DocumentNode.SelectSingleNode("//div[@id='mainResults']");
+                    var container = doc.DocumentNode.SelectSingleNode("//div[@id='mainResults']");
 
-                var productLinks = container
-                    .Descendants("a")
-                    .Where(x => x.Attributes["class"].Value.Contains("s-access-detail-page"))
-                    .Select(x => new Product
-                    {
-                        Name = x.Attributes["title"].Value,
-                        Url = new Uri(x.Attributes["href"].Value).AbsoluteUri
-                    })
-                    .ToList();
+                    if (container == null)
+                        return new List<Product>();
 
-                return productLinks;
+                    var productLinks = container
+                        .Descendants("a")
+                        .Where(x => x.Attributes["class"].Value.Contains("s-access-detail-page"))
+                        .Select(x =>
+                        {
+                            var url = x.Attributes["href"].Value;
+
+                            return new Product
+                            {
+                                Name = x.Attributes["title"].Value,
+                                Url = url.StartsWith(_baseUri.AbsoluteUri)
+                                    ? new Uri(x.Attributes["href"].Value).AbsoluteUri
+                                    : new Uri(_baseUri, x.Attributes["href"].Value).AbsoluteUri
+                            };
+                        })
+                        .ToList();
+
+                    return productLinks;
+                }
+            }
+            finally
+            {
+                Semaphore.Release();
             }
         }
     }

@@ -1,4 +1,6 @@
-﻿using System.IO;
+﻿using System;
+using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 using EagleEye.Extractor.Amazon;
@@ -11,6 +13,8 @@ namespace EagleEye.Extractor
 {
     internal class Program
     {
+        private static object _locker = new object();
+
         private static IConfigurationRoot Configuration { get; set; }
 
         public static void Main(string[] args)
@@ -33,14 +37,47 @@ namespace EagleEye.Extractor
             var httpClient = services.GetService<AmazonHttpClient>();
 
             dbContext.Database.EnsureCreated();
+            dbContext.Database.ExecuteSqlCommand("DELETE FROM Products");
             dbContext.Database.ExecuteSqlCommand("DELETE FROM SubCategories");
 
-            var isCompleted = RunWebScraper(httpClient, dbContext).Result;
+            var subCategories = GetSubCategoriesAsync(httpClient).Result;
+
+            dbContext.SubCategories.AddRange(subCategories);
+            dbContext.SaveChanges();
+
+            var getProductsTasks = subCategories
+                .Select(x => Task.Run(async () =>
+                {
+                    var products = await GetProductsAsync(httpClient, x);
+
+                    if (products.Any())
+                    {
+                        lock (_locker)
+                        {
+                            dbContext.Products.AddRange(products);
+                            dbContext.SaveChanges(); 
+                        }
+                    }
+                }))
+                .ToArray();
+
+            Task.WhenAll(getProductsTasks).Wait();
+
+            //foreach (var s in subCategories)
+            //{
+            //    var products = GetProductsAsync(httpClient, s).Result;
+
+            //    if (products.Any())
+            //    {
+            //        dbContext.Products.AddRange(products);
+            //        dbContext.SaveChanges();
+            //    }
+            //}
         }
 
-        private static async Task<bool> RunWebScraper(AmazonHttpClient httpClient, ApplicationDbContext dbContext)
+        private static async Task<List<SubCategory>> GetSubCategoriesAsync(AmazonHttpClient httpClient)
         {
-            var siteSections = httpClient.GetSectionsAsync().Result;
+            var sections = await httpClient.GetSectionsAsync();
 
             var excludedDepartments = new[]
             {
@@ -61,25 +98,28 @@ namespace EagleEye.Extractor
                 "Credit & Payment Products"
             };
 
-            var includedDepartments = new[]
-            {
-                "Home, Garden & Tools"
-            };
-
-            var getSiteSubcategories = siteSections
-                //.Where(x => !excludedDepartments.Contains(x.Department))
-                .Where(x => includedDepartments.Contains(x.Department))
+            var getSubcategoriesTasks = sections
+                .Where(x => !excludedDepartments.Contains(x.Department))
                 .Select(httpClient.GetSubCategoriesAsync)
                 .ToArray();
 
-            await Task.WhenAll(getSiteSubcategories);
+            await Task.WhenAll(getSubcategoriesTasks);
             
-            var subCategories = getSiteSubcategories.SelectMany(x => x.Result).ToArray();
+            var subCategories = getSubcategoriesTasks.SelectMany(x => x.Result).ToList();
 
-            dbContext.SubCategories.AddRange(subCategories);
-            dbContext.SaveChanges();
+            return subCategories;
+        }
 
-            return true;
+        private static async Task<List<Product>> GetProductsAsync(AmazonHttpClient httpClient, SubCategory subCategory)
+        {
+            var products = await httpClient.GetProductsAsync(subCategory.Uri);
+
+            foreach (var p in products)
+            {
+                p.SubCategory = subCategory;
+            }
+
+            return products;
         }
     }
 }
