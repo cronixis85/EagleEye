@@ -1,144 +1,89 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Net.Http;
 using System.Threading;
 using System.Threading.Tasks;
+using EagleEye.Extractor.Amazon.Models;
 using EagleEye.Extractor.Extensions;
-using EagleEye.Extractor.Models;
 
 namespace EagleEye.Extractor.Amazon
 {
-    public class AmazonHttpClient : HttpClient
+    public partial class AmazonHttpClient : HttpClient
     {
-        private static readonly SemaphoreSlim Semaphore = new SemaphoreSlim(5);
+        private static readonly SemaphoreSlim Semaphore = new SemaphoreSlim(10);
 
-        private readonly Uri _baseUri = new Uri("https://www.amazon.com");
-        private readonly Uri _siteDirectoryUri = new Uri("/gp/site-directory/", UriKind.Relative);
+        private static readonly Uri BaseUri = new Uri("https://www.amazon.com");
+        private static readonly Uri SiteDirectoryUri = new Uri("/gp/site-directory/", UriKind.Relative);
 
         public AmazonHttpClient()
         {
-            BaseAddress = _baseUri;
+            BaseAddress = BaseUri;
         }
 
-        public async Task<List<Section>> GetSectionsAsync()
-        {
-            using (var response = await GetAsync(_siteDirectoryUri))
-            {
-                var doc = await response.Content.ReadAsHtmlDocumentAsync();
-
-                var siteSections = new List<Section>();
-
-                var deptBoxes = doc.DocumentNode
-                                   .SelectNodes("//div[@class='fsdDeptBox']");
-
-                if (deptBoxes == null)
-                    return siteSections;
-
-                siteSections = deptBoxes
-                    .SelectMany(x =>
-                    {
-                        var dept = x.Descendants("h2")
-                                    .Single(n => n.Attributes["class"].Value == "fsdDeptTitle")
-                                    .InnerText;
-
-                        var sections = x.Descendants("a")
-                                        .Where(n => n.Attributes["class"].Value == "a-link-normal fsdLink fsdDeptLink")
-                                        .Select(a => new Section
-                                        {
-                                            Department = dept,
-                                            Name = a.InnerText,
-                                            Url = new Uri(_baseUri, a.Attributes["href"].Value).AbsoluteUri
-                                        })
-                                        .ToArray();
-
-                        return sections;
-                    })
-                    .ToList();
-
-                return siteSections;
-            }
-        }
-
-        public async Task<List<SubCategory>> GetSubCategoriesAsync(Section siteSection)
-        {
-            using (var response = await GetAsync(siteSection.Uri))
-            {
-                var doc = await response.Content.ReadAsHtmlDocumentAsync();
-
-                var subCategories = new List<SubCategory>();
-
-                var categoryLinks = doc.DocumentNode.SelectNodes("//a[@class='list-item__category-link']");
-
-                if (categoryLinks == null)
-                    return subCategories;
-
-                var subCategoryWrappers = doc.DocumentNode.SelectNodes("//div[contains(@class, 'sub-categories__list')]");
-
-                if (subCategoryWrappers == null)
-                    return subCategories;
-
-                foreach (var c in categoryLinks)
-                {
-                    var elementId = c.Attributes["id"].Value;
-                    var categoryName = c.InnerText;
-
-                    var subCategoryNode = subCategoryWrappers.SingleOrDefault(x => x.Attributes["id"].Value == "sub" + elementId);
-
-                    if (subCategoryNode == null)
-                        continue;
-
-                    var subcats = subCategoryNode.Descendants("a")
-                                                 .Select(x => new SubCategory
-                                                 {
-                                                     Department = siteSection.Department.Clean(),
-                                                     Section = siteSection.Name.Clean(),
-                                                     Category = categoryName.Clean(),
-                                                     Name = x.InnerText.Clean(),
-                                                     Url = new Uri(_baseUri, x.Attributes["href"].Value).AbsoluteUri
-                                                 })
-                                                 .ToList();
-
-                    subCategories.AddRange(subcats);
-                }
-
-                return subCategories;
-            }
-        }
-
-        public async Task<List<Product>> GetProductsAsync(Uri uri)
+        public async Task<List<Department>> GetDepartmentalSectionsAsync()
         {
             await Semaphore.WaitAsync(TimeSpan.FromHours(1));
 
             try
             {
-                using (var response = await GetAsync(uri))
+                using (var response = await GetAsync(SiteDirectoryUri))
                 {
                     var doc = await response.Content.ReadAsHtmlDocumentAsync();
+                    return new ExtractDepartments().Execute(doc);
+                }
+            }
+            finally
+            {
+                Semaphore.Release();
+            }
+        }
 
-                    var container = doc.DocumentNode.SelectSingleNode("//div[@id='mainResults']");
+        public async Task<List<Category>> GetCategoriesAsync(Section section)
+        {
+            await Semaphore.WaitAsync(TimeSpan.FromHours(1));
 
-                    if (container == null)
-                        return new List<Product>();
+            try
+            {
+                using (var response = await GetAsync(section.Uri))
+                {
+                    var doc = await response.Content.ReadAsHtmlDocumentAsync();
+                    return new ExtractCategories().Execute(doc);
+                }
+            }
+            finally
+            {
+                Semaphore.Release();
+            }
+        }
 
-                    var productLinks = container
-                        .Descendants("a")
-                        .Where(x => x.Attributes["class"].Value.Contains("s-access-detail-page"))
-                        .Select(x =>
-                        {
-                            var url = x.Attributes["href"].Value;
+        public async Task<List<Product>> GetProductsAsync(Subcategory subcategory)
+        {
+            await Semaphore.WaitAsync(TimeSpan.FromHours(1));
 
-                            return new Product
-                            {
-                                Name = x.Attributes["title"].Value,
-                                Url = url.StartsWith(_baseUri.AbsoluteUri)
-                                    ? new Uri(x.Attributes["href"].Value).AbsoluteUri
-                                    : new Uri(_baseUri, x.Attributes["href"].Value).AbsoluteUri
-                            };
-                        })
-                        .ToList();
+            try
+            {
+                using (var response = await GetAsync(subcategory.Uri))
+                {
+                    var doc = await response.Content.ReadAsHtmlDocumentAsync();
+                    return new ExtractProducts().Execute(doc);
+                }
+            }
+            finally
+            {
+                Semaphore.Release();
+            }
+        }
 
-                    return productLinks;
+        public async Task<ProductDetail> GetProductDetailAsync(Product product)
+        {
+            await Semaphore.WaitAsync(TimeSpan.FromHours(1));
+
+            try
+            {
+                using (var response = await GetAsync(product.Uri))
+                {
+                    var doc = await response.Content.ReadAsHtmlDocumentAsync();
+                    return new ExtractProductDetails().Execute(doc);
                 }
             }
             finally
