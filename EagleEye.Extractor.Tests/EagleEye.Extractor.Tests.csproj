@@ -24,6 +24,9 @@
     <None Update="Amazon\Fakes\productDetails.html">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
+    <None Update="Amazon\Fakes\productDetails2.html">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
     <None Update="Amazon\Fakes\section.html">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>

@@ -28,5 +28,28 @@ namespace EagleEye.Extractor.Tests.Amazon
             Assert.Equal(1, details.Rank["Home & Kitchen > Kitchen & Dining > Coffee, Tea & Espresso > Coffee Makers > French Presses"]);
             Assert.Equal(new DateTime(2013, 07, 9), details.FirstAvailableOn);
         }
+
+        [Fact]
+        public void ShouldReturnAlternativeProductDetails()
+        {
+            var doc = GetHtmlDocument("productDetails2.html");
+
+            var details = new AmazonHttpClient.ExtractProductDetails().Execute(doc);
+
+            // https://www.amazon.com/Puller-America-unfinished-American-Plywood/dp/B075YYXYMB/ref=lp_289719_1_2_sspa?s=kitchen&ie=UTF8&qid=1508011883&sr=1-2-spons&psc=1
+            Assert.Equal(@"h-BAR Oven Rack Push Puller for Baking, Made in America 17"" L x 4.75"" H x 0.5"" W, unfinished American Birch Plywood - hBAR at Home Series", details.Name);
+            Assert.Equal("hBARSCI", details.Brand);
+            Assert.Equal("17 x 0.5 x 4.8 inches ; 3 ounces", details.Dimensions);
+            Assert.Null(details.ItemWeight);
+            Assert.Equal("15.2 ounces", details.ShippingWeight);
+            Assert.Null(details.Manufacturer);
+            Assert.Equal("B075YYXYMB", details.Asin);
+            Assert.Null(details.ModelNumber);
+            Assert.Equal(0, details.Rating);
+            Assert.Equal(0, details.TotalReviews);
+            Assert.Equal(95334, details.Rank["Industrial & Scientific"]);
+            Assert.Equal(278703, details.Rank["Home & Kitchen > Kitchen & Dining"]);
+            Assert.Null(details.FirstAvailableOn);
+        }
     }
 }

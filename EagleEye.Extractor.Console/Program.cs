@@ -2,20 +2,21 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 using EagleEye.Extractor.Amazon;
 using EagleEye.Extractor.Console.Extensions;
 using EagleEye.Extractor.Console.Models;
-using EagleEye.Extractor.Models;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Department = EagleEye.Extractor.Amazon.Models.Department;
 
 namespace EagleEye.Extractor.Console
 {
     internal class Program
     {
-        private static object _locker = new object();
+        private static readonly object _locker = new object();
 
         private static IConfigurationRoot Configuration { get; set; }
 
@@ -41,127 +42,90 @@ namespace EagleEye.Extractor.Console
                 dbContext.Database.EnsureDeleted();
                 dbContext.Database.EnsureCreated();
 
-                // departments, sections
-                var departments = httpClient.GetDepartmentalSectionsAsync().Result;
-
-                var sections = departments.SelectMany(x => x.Sections).ToArray();
-
-                var getSubCategoryTasks = sections
-                    .Select(async x =>
-                    {
-                        x.Categories = await httpClient.GetCategoriesAsync(x);
-                        return x.Categories;
-                    })
-                    .ToArray();
-
-                Task.WhenAll(getSubCategoryTasks).Wait();
+                var departments = UpdateCategoriesAsync(httpClient).Result;
 
                 // save department, sections
                 var depts = departments.ToDbDepartments().ToList();
                 dbContext.Departments.AddRange(depts);
                 dbContext.SaveChanges();
 
-                //dbContext.SubCategories.AddRange(subcategories);
-                //dbContext.SaveChanges();
+                var subcats = depts
+                    .Where(x => x.Sections != null)
+                    .SelectMany(x => x.Sections)
+                    .Where(x => x.Categories != null)
+                    .SelectMany(x => x.Categories)
+                    .Where(x => x.Subcategories != null)
+                    .SelectMany(x => x.Subcategories)
+                    .ToList();
 
-                //// products
-                //var getProductsTasks = subcategories
-                //    .Select(s => Task.Run(async () =>
-                //    {
-                //        var prods = await httpClient.GetProductsAsync(s);
-
-                //        if (!prods.Any())
-                //            return prods;
-
-                //        var asins = prods.Select(p => p.Asin).ToArray();
-
-                //        lock (_locker)
-                //        {
-                //            var existingProds = dbContext.Products.Where(p => asins.Contains(p.Asin)).ToArray();
-
-                //            foreach (var p in prods)
-                //            {
-                //                var toUpdate = existingProds.SingleOrDefault(x => x.Asin == p.Asin);
-
-                //                if (toUpdate == null)
-                //                {
-                //                    // add
-                //                    dbContext.Products.Add(p);
-                //                }
-                //                else
-                //                {
-                //                    // edit
-                //                    toUpdate.Name = p.Name;
-                //                    toUpdate.Url = p.Url;
-                //                }
-                //            }
-
-                //            dbContext.SaveChanges();
-                //        }
-
-                //        return prods;
-                //    }))
-                //    .ToArray();
-
-                //Task.WhenAll(getProductsTasks).Wait();
-
-                //// product detail
-                //var products = getProductsTasks.SelectMany(x => x.Result).ToArray();
-
-                //var getProductDetailTasks = products
-                //    .Select(x => Task.Run(async () =>
-                //    {
-                //        var d = await httpClient.GetProductDetailAsync(x);
-
-                //        lock (_locker)
-                //        {
-                //            dbContext.ProductDetails.Add(d);
-                //            dbContext.SaveChanges();
-                //        }
-
-                //        return d;
-                //    }))
-                //    .ToArray();
-
-                //Task.WhenAll(getProductDetailTasks).Wait();
+                UpdateProducts(httpClient, dbContext, subcats);
             }
         }
 
-        private static async Task<List<Subcategory>> GetSubCategoriesAsync(AmazonHttpClient httpClient)
+        private static async Task<List<Department>> UpdateCategoriesAsync(AmazonHttpClient httpClient)
         {
-            var sections = await httpClient.GetDepartmentalSectionsAsync();
+            var ctr = new CancellationTokenSource();
 
-            var excludedDepartments = new[]
-            {
-                "Amazon Video",
-                "Amazon Music",
-                "Appstore for Android",
-                "Prime Photos and Prints",
-                "Kindle E-readers & Books",
-                "Fire Tablets",
-                "Subscribe with Amazon",
-                "Fire TV",
-                "Echo & Alexa",
-                "Books & Audible",
-                "Movies, Music & Games",
-                "Treasure Truck",
-                "Food & Grocery",
-                "Home Services",
-                "Credit & Payment Products"
-            };
+            // departments, sections
+            var departments = httpClient.GetDepartmentalSectionsAsync(ctr.Token).Result;
 
-            throw new NotImplementedException();
+            var sections = departments
+                //.Where(x => x.Name == "Home, Garden & Tools")
+                .SelectMany(x => x.Sections)
+                .ToArray();
 
-            //var getSubcategoriesTasks = sections
-            //    .Where(x => !excludedDepartments.Contains(x.Department))
-            //    .Select(httpClient.GetSubCategoriesAsync)
-            //    .ToArray();
+            var getSubCategoryTasks = sections
+                .Select(async x =>
+                {
+                    x.Categories = await httpClient.GetCategoriesAsync(x, ctr.Token);
+                    return x;
+                })
+                .ToArray();
 
-            //await Task.WhenAll(getSubcategoriesTasks);
+            await Task.WhenAll(getSubCategoryTasks);
 
-            //var subCategories = getSubcategoriesTasks.SelectMany(x => x.Result).ToList();
+            return departments;
+        }
 
-            //return subCategories;
+        private static void UpdateProducts(AmazonHttpClient httpClient, ApplicationDbContext dbContext, List<Subcategory> subcategories)
+        {
+            foreach (var s in subcategories)
+                dbContext.Entry(s).State = EntityState.Detached;
+
+            var ctr = new CancellationTokenSource();
+
+            var getProductTasks = subcategories
+                .Select(async s =>
+                {
+                    var products = await httpClient.GetProductsAsync(s.Uri, ctr.Token);
+
+                    if (products == null)
+                        return s;
+
+                    var getDetailTasks = products
+                        .Select(async p => await httpClient.GetProductDetailAsync(p, ctr.Token))
+                        .ToArray();
+
+                    await Task.WhenAll(getDetailTasks);
+
+                    s.Products = getDetailTasks
+                        .Select(x => x.Result)
+                        .ToDbProducts().ToList();
+
+                    return s;
+                })
+                .Select(x =>
+                {
+                    lock (_locker)
+                    {
+                        var subcat = x.Result;
+                        dbContext.Subcategories.Update(subcat);
+                        dbContext.SaveChanges();
+                    }
+
+                    return x;
+                })
+                .ToArray();
         }
     }
 }

@@ -13,6 +13,7 @@ namespace EagleEye.Extractor.Extensions
             return source.Replace("\n", "")
                          .Replace("&amp;", "&")
                          .Replace("&#039;", "'")
+                         .Replace("&quot;", "\"")
                          .Trim();
         }
     }

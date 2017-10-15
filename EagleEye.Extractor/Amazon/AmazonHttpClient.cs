@@ -20,13 +20,13 @@ namespace EagleEye.Extractor.Amazon
             BaseAddress = BaseUri;
         }
 
-        public async Task<List<Department>> GetDepartmentalSectionsAsync()
+        public async Task<List<Department>> GetDepartmentalSectionsAsync(CancellationToken cancellationToken)
         {
             await Semaphore.WaitAsync(TimeSpan.FromHours(1));
 
             try
             {
-                using (var response = await GetAsync(SiteDirectoryUri))
+                using (var response = await GetAsync(SiteDirectoryUri, cancellationToken))
                 {
                     var doc = await response.Content.ReadAsHtmlDocumentAsync();
                     return new ExtractDepartments().Execute(doc);
@@ -38,13 +38,13 @@ namespace EagleEye.Extractor.Amazon
             }
         }
 
-        public async Task<List<Category>> GetCategoriesAsync(Section section)
+        public async Task<List<Category>> GetCategoriesAsync(Section section, CancellationToken cancellationToken)
         {
             await Semaphore.WaitAsync(TimeSpan.FromHours(1));
 
             try
             {
-                using (var response = await GetAsync(section.Uri))
+                using (var response = await GetAsync(section.Uri, cancellationToken))
                 {
                     var doc = await response.Content.ReadAsHtmlDocumentAsync();
                     return new ExtractCategories().Execute(doc);
@@ -56,13 +56,18 @@ namespace EagleEye.Extractor.Amazon
             }
         }
 
-        public async Task<List<Product>> GetProductsAsync(Subcategory subcategory)
+        public Task<List<Product>> GetProductsAsync(Subcategory subcategory, CancellationToken cancellationToken)
+        {
+            return GetProductsAsync(subcategory.Uri, cancellationToken);
+        }
+
+        public async Task<List<Product>> GetProductsAsync(Uri uri, CancellationToken cancellationToken)
         {
             await Semaphore.WaitAsync(TimeSpan.FromHours(1));
 
             try
             {
-                using (var response = await GetAsync(subcategory.Uri))
+                using (var response = await GetAsync(uri, cancellationToken))
                 {
                     var doc = await response.Content.ReadAsHtmlDocumentAsync();
                     return new ExtractProducts().Execute(doc);
@@ -74,21 +79,29 @@ namespace EagleEye.Extractor.Amazon
             }
         }
 
-        public async Task<ProductDetail> GetProductDetailAsync(Product product)
+        public async Task<Product> GetProductDetailAsync(Product product, CancellationToken cancellationToken)
         {
             await Semaphore.WaitAsync(TimeSpan.FromHours(1));
 
-            try
+            using (var response = await GetAsync(product.Uri, cancellationToken))
             {
-                using (var response = await GetAsync(product.Uri))
-                {
-                    var doc = await response.Content.ReadAsHtmlDocumentAsync();
-                    return new ExtractProductDetails().Execute(doc);
-                }
-            }
-            finally
-            {
-                Semaphore.Release();
+                var doc = await response.Content.ReadAsHtmlDocumentAsync();
+                var details = new ExtractProductDetails().Execute(doc);
+
+                product.Name = details.Name;
+                product.Brand = details.Brand;
+                product.Dimensions = details.Dimensions;
+                product.ItemWeight = details.ItemWeight;
+                product.ShippingWeight = details.ShippingWeight;
+                product.Manufacturer = details.Manufacturer;
+                product.Asin = details.Asin;
+                product.ModelNumber = details.ModelNumber;
+                product.Rating = details.Rating;
+                product.TotalReviews = details.TotalReviews;
+                product.FirstAvailableOn = details.FirstAvailableOn;
+                product.Rank = details.Rank;
+
+                return product;
             }
         }
     }

@@ -1,6 +1,4 @@
-﻿using EagleEye.Extractor.Console.Models;
-
-namespace EagleEye.Extractor.Models
+﻿namespace EagleEye.Extractor.Console.Models
 {
     public class SubcategoryProduct
     {

@@ -19,14 +19,14 @@ namespace EagleEye.Extractor.Amazon
                     return null;
 
                 var productLinks = container
-                    .Descendants("li")
+                    .Element("ul")
+                    .Elements("li")
                     .Select(x =>
                     {
-                        var asin = x.Attributes["data-asin"].Value;
+                        var asin = x.Attributes["data-asin"]?.Value;
 
-                        var link = x
-                            .Descendants("a")
-                            .Single(a => a.Attributes["class"].Value.Contains("s-access-detail-page"));
+                        var link = x.Descendants("a")
+                                    .Single(a => a.Attributes["class"].Value.Contains("s-access-detail-page"));
 
                         var url = link.Attributes["href"].Value;
 

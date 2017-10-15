@@ -1,7 +1,6 @@
 ﻿using System.Collections.Generic;
 using System.Linq;
 using EagleEye.Extractor.Console.Models;
-using EagleEye.Extractor.Models;
 
 namespace EagleEye.Extractor.Console.Extensions
 {
@@ -60,8 +59,38 @@ namespace EagleEye.Extractor.Console.Extensions
             return new Subcategory
             {
                 Name = source.Name,
-                Url = source.Url
+                Url = source.Url,
+                Products = source.Products?.ToDbProducts().ToList()
             };
+        }
+
+        public static IEnumerable<Product> ToDbProducts(this IEnumerable<Amazon.Models.Product> source)
+        {
+            return source.Select(x => x.ToDbProduct());
+        }
+
+        public static Product ToDbProduct(this Amazon.Models.Product source)
+        {
+            var p = new Product
+            {
+                Name = source.Name,
+                Asin = source.Asin,
+                Url = source.Url,
+                Brand = source.Brand,
+                Dimensions = source.Dimensions,
+                ItemWeight = source.ItemWeight,
+                ShippingWeight = source.ShippingWeight,
+                Manufacturer = source.Manufacturer,
+                ModelNumber = source.ModelNumber,
+                Rating = source.Rating,
+                TotalReviews = source.TotalReviews,
+                FirstAvailableOn = source.FirstAvailableOn
+            };
+
+            if (source.Rank != null)
+                p.SetRank(source.Rank);
+
+            return p;
         }
     }
 }

@@ -3,12 +3,12 @@ using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
-namespace EagleEye.Extractor.Models
+namespace EagleEye.Extractor.Console.Models
 {
     public class Subcategory
     {
-        [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
         [Column(Order = 0)]
+        [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
         public int Id { get; set; }
 
         [Column(Order = 1)]
@@ -19,6 +19,10 @@ namespace EagleEye.Extractor.Models
         [Required]
         public string Url { get; set; }
 
-        public List<SubcategoryProduct> SubcategoryProducts { get; set; }
+        public Uri Uri => new Uri(Url);
+
+        public List<Product> Products { get; set; }
+
+        //public List<SubcategoryProduct> SubcategoryProducts { get; set; }
     }
 }
