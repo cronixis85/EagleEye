@@ -68,12 +68,12 @@ namespace EagleEye.Extractor.Tests.Amazon
             Assert.Null(details.Manufacturer);
             Assert.Equal("B0149YRRXA", details.Asin);
             Assert.Equal("Black", details.ModelNumber);
-            Assert.Equal(3.2, details.Rating);
+            Assert.Equal(3.2f, details.Rating);
             Assert.Equal(206, details.TotalReviews);
             Assert.Equal(544, details.Rank["Amazon Launchpad"]);
             Assert.Equal(3, details.Rank["Musical Instruments > Guitars > Electric Guitars"]);
             Assert.Equal(98, details.Rank["Amazon Launchpad > Gadgets"]);
-            Assert.Null(details.FirstAvailableOn);
+            Assert.Equal(new DateTime(2015, 8, 26), details.FirstAvailableOn);
         }
     }
 }
