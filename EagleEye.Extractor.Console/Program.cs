@@ -58,7 +58,7 @@ namespace EagleEye.Extractor.Console
                     .SelectMany(x => x.Subcategories)
                     .ToList();
 
-                UpdateProducts(httpClient, dbContext, subcats);
+                UpdateProducts(httpClient, dbContext, subcats).Wait();
             }
         }
 
@@ -87,7 +87,7 @@ namespace EagleEye.Extractor.Console
             return departments;
         }
 
-        private static void UpdateProducts(AmazonHttpClient httpClient, ApplicationDbContext dbContext, List<Subcategory> subcategories)
+        private static async Task UpdateProducts(AmazonHttpClient httpClient, ApplicationDbContext dbContext, List<Subcategory> subcategories)
         {
             foreach (var s in subcategories)
                 dbContext.Entry(s).State = EntityState.Detached;
@@ -126,6 +126,8 @@ namespace EagleEye.Extractor.Console
                     return x;
                 })
                 .ToArray();
+
+            await Task.WhenAll(getProductTasks);
         }
     }
 }

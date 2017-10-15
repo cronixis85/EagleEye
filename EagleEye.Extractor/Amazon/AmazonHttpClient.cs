@@ -10,7 +10,7 @@ namespace EagleEye.Extractor.Amazon
 {
     public partial class AmazonHttpClient : HttpClient
     {
-        private static readonly SemaphoreSlim Semaphore = new SemaphoreSlim(10);
+        private static readonly SemaphoreSlim Semaphore = new SemaphoreSlim(7);
 
         private static readonly Uri BaseUri = new Uri("https://www.amazon.com");
         private static readonly Uri SiteDirectoryUri = new Uri("/gp/site-directory/", UriKind.Relative);
@@ -56,11 +56,6 @@ namespace EagleEye.Extractor.Amazon
             }
         }
 
-        public Task<List<Product>> GetProductsAsync(Subcategory subcategory, CancellationToken cancellationToken)
-        {
-            return GetProductsAsync(subcategory.Uri, cancellationToken);
-        }
-
         public async Task<List<Product>> GetProductsAsync(Uri uri, CancellationToken cancellationToken)
         {
             await Semaphore.WaitAsync(TimeSpan.FromHours(1));
@@ -83,25 +78,32 @@ namespace EagleEye.Extractor.Amazon
         {
             await Semaphore.WaitAsync(TimeSpan.FromHours(1));
 
-            using (var response = await GetAsync(product.Uri, cancellationToken))
+            try
             {
-                var doc = await response.Content.ReadAsHtmlDocumentAsync();
-                var details = new ExtractProductDetails().Execute(doc);
+                using (var response = await GetAsync(product.Uri, cancellationToken))
+                {
+                    var doc = await response.Content.ReadAsHtmlDocumentAsync();
+                    var details = new ExtractProductDetails().Execute(doc);
 
-                product.Name = details.Name;
-                product.Brand = details.Brand;
-                product.Dimensions = details.Dimensions;
-                product.ItemWeight = details.ItemWeight;
-                product.ShippingWeight = details.ShippingWeight;
-                product.Manufacturer = details.Manufacturer;
-                product.Asin = details.Asin;
-                product.ModelNumber = details.ModelNumber;
-                product.Rating = details.Rating;
-                product.TotalReviews = details.TotalReviews;
-                product.FirstAvailableOn = details.FirstAvailableOn;
-                product.Rank = details.Rank;
+                    product.Name = details.Name;
+                    product.Brand = details.Brand;
+                    product.Dimensions = details.Dimensions;
+                    product.ItemWeight = details.ItemWeight;
+                    product.ShippingWeight = details.ShippingWeight;
+                    product.Manufacturer = details.Manufacturer;
+                    product.Asin = details.Asin;
+                    product.ModelNumber = details.ModelNumber;
+                    product.Rating = details.Rating;
+                    product.TotalReviews = details.TotalReviews;
+                    product.FirstAvailableOn = details.FirstAvailableOn;
+                    product.Rank = details.Rank;
 
-                return product;
+                    return product;
+                }
+            }
+            finally
+            {
+                Semaphore.Release();
             }
         }
     }
