@@ -30,9 +30,9 @@ namespace EagleEye.Extractor.Tests.Amazon
         }
 
         [Fact]
-        public void ShouldReturnAlternativeProductDetails()
+        public void ShouldReturnProductDetailsForListTableInfo()
         {
-            var doc = GetHtmlDocument("productDetails2.html");
+            var doc = GetHtmlDocument("productDetails2_listTable.html");
 
             var details = new AmazonHttpClient.ExtractProductDetails().Execute(doc);
 
@@ -47,8 +47,32 @@ namespace EagleEye.Extractor.Tests.Amazon
             Assert.Null(details.ModelNumber);
             Assert.Equal(0, details.Rating);
             Assert.Equal(0, details.TotalReviews);
-            Assert.Equal(95334, details.Rank["Industrial & Scientific"]);
-            Assert.Equal(278703, details.Rank["Home & Kitchen > Kitchen & Dining"]);
+            Assert.Equal(89617, details.Rank["Industrial & Scientific"]);
+            Assert.Equal(261831, details.Rank["Home & Kitchen > Kitchen & Dining"]);
+            Assert.Null(details.FirstAvailableOn);
+        }
+
+        [Fact]
+        public void ShouldReturnProductDetailsFeatureDivInfo()
+        {
+            var doc = GetHtmlDocument("productDetails3_product-details_feature_div.html");
+
+            var details = new AmazonHttpClient.ExtractProductDetails().Execute(doc);
+
+            // https://www.amazon.com/Black-Beginners-Compatible-Connectivity-Zivix/dp/B0149YRRXA/ref=lp_11971381_1_2?s=musical-instruments&amp%3Bie=UTF8&amp%3Bqid=1508047561&amp%3Bsr=1-2&th=1
+            Assert.Equal(@"Jamstik+ Black Portable App Enabled MIDI Electric Guitar, for Beginners and Music Creators, iOS, Android & Mac Compatible, with Bluetooth Connectivity, Powered by Zivix", details.Name);
+            Assert.Equal("Zivix", details.Brand);
+            Assert.Equal("16.5 x 3.5 x 2.5 inches", details.Dimensions);
+            Assert.Equal("1.9 pounds", details.ItemWeight);
+            Assert.Equal("3.2 pounds", details.ShippingWeight);
+            Assert.Null(details.Manufacturer);
+            Assert.Equal("B0149YRRXA", details.Asin);
+            Assert.Equal("Black", details.ModelNumber);
+            Assert.Equal(3.2, details.Rating);
+            Assert.Equal(206, details.TotalReviews);
+            Assert.Equal(544, details.Rank["Amazon Launchpad"]);
+            Assert.Equal(3, details.Rank["Musical Instruments > Guitars > Electric Guitars"]);
+            Assert.Equal(98, details.Rank["Amazon Launchpad > Gadgets"]);
             Assert.Null(details.FirstAvailableOn);
         }
     }

@@ -11,9 +11,11 @@ namespace EagleEye.Extractor.Extensions
         public static string Clean(this string source)
         {
             return source.Replace("\n", "")
+                         .Replace("&nbsp;", " ")
                          .Replace("&amp;", "&")
                          .Replace("&#039;", "'")
                          .Replace("&quot;", "\"")
+                         .Replace("&gt;", ">")
                          .Trim();
         }
     }

@@ -20,7 +20,8 @@ namespace EagleEye.Extractor.Amazon
 
                 // brand
                 var brandNode = node.SelectSingleNode("//a[@id='bylineInfo']")
-                                ?? node.SelectSingleNode("//div[@id='brandByline_feature_div']");
+                                ?? node.SelectSingleNode("//div[@id='brandByline_feature_div']")
+                                ?? node.SelectSingleNode("//div[@id='brandBylineWrapper']");
 
                 product.Brand = brandNode?.InnerText.Clean();
 
@@ -204,6 +205,62 @@ namespace EagleEye.Extractor.Amazon
                             };
                         })
                         .ToDictionary(x => x.Category, x => x.Rank);
+                }
+
+                // Amazon Best Sellers Rank
+                if (details.ContainsKey("Amazon Best Sellers Rank"))
+                {
+                    var rankNode = details["Amazon Best Sellers Rank"].ToHtmlDocument().DocumentNode;
+
+                    var childNodes = rankNode.ChildNodes.ToArray();
+                    product.Rank = new Dictionary<string, int>();
+
+                    if (childNodes[0].NodeType.ToString() == "Text")
+                    {
+                        var firstRankSplit = childNodes[0].InnerText.Split(" in ");
+
+                        var rank = firstRankSplit[0]
+                            .Replace("#", "")
+                            .Replace(",", "")
+                            .Clean();
+
+                        var category = firstRankSplit[1]
+                            .Replace("(", "")
+                            .Clean();
+
+                        product.Rank.Add(category, int.Parse(rank));
+                    }
+
+                    var li = rankNode
+                        .Element("ul")
+                        .Elements("li")
+                        .Select(x =>
+                        {
+                            // rank
+                            var rankSpan = x.ChildNodes.SingleOrDefault(n => n.Attributes["class"]?.Value == "zg_hrsr_rank");
+                            var rankClean = rankSpan?.InnerText.Replace("#", "").Replace(",", "").Clean();
+
+                            var success = int.TryParse(rankClean, out var rank);
+
+                            if (!success)
+                                rank = -1;
+
+                            // category
+                            var categorySpan = x.ChildNodes.SingleOrDefault(n => n.Attributes["class"]?.Value == "zg_hrsr_ladder");
+                            var categoryClean = categorySpan?.InnerText
+                                                            .Clean()
+                                                            .Replace("in ", "");
+
+                            return new
+                            {
+                                Category = categoryClean,
+                                Rank = rank
+                            };
+                        })
+                        .ToArray();
+
+                    foreach (var item in li)
+                        product.Rank.Add(item.Category, item.Rank);
                 }
             }
         }
