@@ -36,7 +36,7 @@ namespace EagleEye.Extractor.Tests.Amazon
 
             var details = new AmazonHttpClient.ExtractProductDetails().Execute(doc);
 
-            // https://www.amazon.com/gp/product/B00DUHACEE/ref=s9_acsd_top_hd_bw_b8Rp8zL_c_x_w?pf_rd_m=ATVPDKIKX0DER&pf_rd_s=merchandised-search-11&pf_rd_r=E42QZDSFVG27M8GRZY5Q&pf_rd_t=101&pf_rd_p=b12e2fd8-a6df-5946-98d4-be1d821fa03b&pf_rd_i=7740213011
+            // https://www.amazon.com/Zinus-Compack-Adjustable-Spring-Mattress/dp/B00IGGJQ6O/ref=lp_3733101_1_2?s=furniture&amp;ie=UTF8&amp;qid=1508310075&amp;sr=1-2
             Assert.Equal("Zinus Compack Adjustable Steel Bed Frame, for Box Spring & Mattress Set, Fits Full to King", details.Name);
             Assert.Equal("Zinus", details.Brand);
             Assert.Equal("53.5 x 70.5 x 7 inches", details.Dimensions);
