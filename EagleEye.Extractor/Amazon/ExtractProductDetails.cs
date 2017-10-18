@@ -48,8 +48,50 @@ namespace EagleEye.Extractor.Amazon
                     return product;
                 }
 
+                // product-details_feature_div
+                var featureDiv = node.SelectSingleNode("//div[@id='product-details_feature_div']");
+
+                if (featureDiv != null)
+                {
+                    var details = featureDiv
+                        .Descendants("table")
+                        .SelectMany(table =>
+                        {
+                            var detailsTable = table
+                                .Descendants("tr")
+                                .Select(tr =>
+                                {
+                                    var td = tr.Elements("td").ToArray();
+
+                                    var propertyTd = td.SingleOrDefault(x => x.Attributes["class"]?.Value == "label");
+                                    var property = propertyTd?.InnerText.Clean();
+
+                                    var valueTd = td.SingleOrDefault(x => x.Attributes["class"]?.Value == "value");
+                                    var value = valueTd?.InnerHtml;
+
+                                    return new
+                                    {
+                                        Key = property,
+                                        Value = value
+                                    };
+                                })
+                                .ToArray();
+
+                            return detailsTable;
+                        })
+                        .Where(x => x.Key != null)
+                        .ToDictionary(x => x.Key, x => x.Value);
+
+                    SetProduct(product, details);
+
+                    return product;
+                }
+
                 // list table
                 var bulletTable = node.SelectSingleNode("//table[@id='productDetailsTable']");
+
+                if (bulletTable == null)
+                    bulletTable = node.SelectSingleNode("//div[@id='detail-bullets']")?.Element("table");
 
                 if (bulletTable != null)
                 {
@@ -91,42 +133,13 @@ namespace EagleEye.Extractor.Amazon
                     return product;
                 }
 
-                // product-details_feature_div
-                var featureDiv = node.SelectSingleNode("//div[@id='product-details_feature_div']");
+                //var detailBullet = node.SelectSingleNode("//div[@id='detail-bullets']");
 
-                if (featureDiv != null)
-                {
-                    var details = featureDiv
-                        .Descendants("table")
-                        .SelectMany(table =>
-                        {
-                            var detailsTable = table
-                                .Descendants("tr")
-                                .Select(tr =>
-                                {
-                                    var td = tr.Elements("td").ToArray();
+                //if (detailBullet != null)
+                //{
 
-                                    var propertyTd = td.SingleOrDefault(x => x.Attributes["class"]?.Value == "label");
-                                    var property = propertyTd?.InnerText.Clean();
-
-                                    var valueTd = td.SingleOrDefault(x => x.Attributes["class"]?.Value == "value");
-                                    var value = valueTd?.InnerHtml;
-
-                                    return new
-                                    {
-                                        Key = property,
-                                        Value = value
-                                    };
-                                })
-                                .ToArray();
-
-                            return detailsTable;
-                        })
-                        .Where(x => x.Key != null)
-                        .ToDictionary(x => x.Key, x => x.Value);
-
-                    SetProduct(product, details);
-                }
+                //    return product;
+                //}
 
                 return product;
             }
@@ -166,22 +179,34 @@ namespace EagleEye.Extractor.Amazon
                 if (details.ContainsKey("Item model number"))
                     product.ModelNumber = details["Item model number"].Clean();
 
-                // ratings, total reviews
+                // Customer Reviews / Average Customer Review
+                HtmlNode customerReviewsNode = null;
+
                 if (details.ContainsKey("Customer Reviews"))
+                    customerReviewsNode = details["Customer Reviews"].ToHtmlDocument().DocumentNode;
+                else if (details.ContainsKey("Average Customer Review"))
+                    customerReviewsNode = details["Average Customer Review"].ToHtmlDocument().DocumentNode;
+
+                if (customerReviewsNode != null)
                 {
-                    var customerReviews = details["Customer Reviews"].ToHtmlDocument().DocumentNode;
+                    if (customerReviewsNode.InnerText.Contains("Be the first to review this item"))
+                    {
+                        product.Rating = 0;
+                    }
+                    else
+                    {
+                        var ratingText = Regex.Match(customerReviewsNode.InnerText, @"\d?(.\d) out of 5 stars").Value;
+                        var rating = ratingText.Replace("out of 5 stars", "").Clean();
 
-                    var ratingText = Regex.Match(customerReviews.InnerText, @"\d?(.\d) out of 5 stars").Value;
-                    var rating = ratingText.Replace("out of 5 stars", "").Clean();
+                        product.Rating = float.Parse(rating);
+                    }
 
-                    product.Rating = float.Parse(rating);
-
-                    var totalReviewsText = customerReviews
+                    var totalReviewsText = customerReviewsNode
                         .Descendants("span")
-                        .Single(x => x.Attributes["id"]?.Value == "acrCustomerReviewText" || x.Attributes["id"]?.Value == "acrCustomerWriteReviewText" || x.Attributes["class"]?.Value == "a-size-small")
-                        .InnerText;
+                        .SingleOrDefault(x => x.Attributes["id"]?.Value == "acrCustomerReviewText" || x.Attributes["id"]?.Value == "acrCustomerWriteReviewText" || x.Attributes["class"]?.Value == "a-size-small")
+                        ?.InnerText;
 
-                    if (totalReviewsText.Contains("Be the first to review this item"))
+                    if (string.IsNullOrEmpty(totalReviewsText) || totalReviewsText.Contains("Be the first to review this item"))
                     {
                         product.TotalReviews = 0;
                     }
@@ -240,7 +265,7 @@ namespace EagleEye.Extractor.Amazon
                                 }
 
                                 // else: // #1 in Home & Kitchen > Kitchen & Dining > Coffee, Tea & Espresso > Coffee Makers > French Presses
-                                var splitByIn = description.Split(new[] { " in " }, StringSplitOptions.None);
+                                var splitByIn = description.Split(new[] {" in "}, StringSplitOptions.None);
 
                                 var rankClean = splitByIn[0]
                                     .Replace("#", "")

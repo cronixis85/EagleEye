@@ -28,12 +28,12 @@ namespace EagleEye.Extractor.Amazon
                         var link = x.Descendants("a")
                                     .Single(a => a.Attributes["class"].Value.Contains("s-access-detail-page"));
 
-                        var url = link.Attributes["href"].Value;
+                        var url = link.Attributes["href"]?.Value;
 
                         return new Product
                         {
                             Asin = asin,
-                            Name = link.Attributes["title"].Value.Clean(),
+                            Name = link.Attributes["title"]?.Value.Clean(),
                             Url = url.StartsWith(BaseUri.AbsoluteUri)
                                 ? new Uri(url).AbsoluteUri
                                 : new Uri(BaseUri, url).AbsoluteUri

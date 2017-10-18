@@ -75,5 +75,30 @@ namespace EagleEye.Extractor.Tests.Amazon
             Assert.Equal(98, details.Rank["Amazon Launchpad > Gadgets"]);
             Assert.Equal(new DateTime(2015, 8, 26), details.FirstAvailableOn);
         }
+
+        [Fact]
+        public void ShouldReturnProductDetailsDetailBulletInfo()
+        {
+            var doc = GetHtmlDocument("productDetails_detailBullet.html");
+
+            var details = new AmazonHttpClient.ExtractProductDetails().Execute(doc);
+
+            // https://www.amazon.com/Franklin-Sports-Mini-Hockey-Goal/dp/B00T7DZRUO/ref=lp_5680888011_1_11?s=team-sports&amp;ie=UTF8&amp;qid=1508067481&amp;sr=1-11
+            Assert.Equal(@"Franklin Sports NHL Mini Hockey Goal Set", details.Name);
+            Assert.Equal("Franklin Sports", details.Brand);
+            Assert.Equal("28 x 7 x 3 inches ; 2 pounds", details.Dimensions);
+            Assert.Null(details.ItemWeight);
+            Assert.Equal("2.2 pounds", details.ShippingWeight);
+            Assert.Null(details.Manufacturer);
+            Assert.Equal("B00T7DZRUO", details.Asin);
+            Assert.Equal("47009E2", details.ModelNumber);
+            Assert.Equal(3.9f, details.Rating);
+            Assert.Equal(4, details.TotalReviews);
+            Assert.Equal(64494, details.Rank["Sports & Outdoors"]);
+            Assert.Equal(8, details.Rank["Sports & Outdoors > Sports & Fitness > Team Sports > Ice Hockey > Rink Equipment > Goals"]);
+            Assert.Equal(11, details.Rank["Sports & Outdoors > Sports & Fitness > Team Sports > Other Team Sports > Field Hockey > Goals & Nets"]);
+            Assert.Equal(15, details.Rank["Sports & Outdoors > Fan Shop > Sports Equipment > Hockey Equipment > Hockey Gear"]);
+            Assert.Null(details.FirstAvailableOn);
+        }
     }
 }
