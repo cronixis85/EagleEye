@@ -9,9 +9,9 @@ namespace EagleEye.Extractor.Amazon
 {
     public partial class AmazonHttpClient
     {
-        public class ExtractCategories
+        public class ExtractCategories : ExecuteBase<List<Category>>
         {
-            public List<Category> Execute(HtmlDocument doc)
+            public override List<Category> ExecuteCore(HtmlDocument doc)
             {
                 var catLinks = doc.DocumentNode.SelectNodes("//a[@class='list-item__category-link']");
 

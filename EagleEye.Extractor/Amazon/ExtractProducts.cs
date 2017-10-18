@@ -9,9 +9,9 @@ namespace EagleEye.Extractor.Amazon
 {
     public partial class AmazonHttpClient
     {
-        public class ExtractProducts
+        public class ExtractProducts : ExecuteBase<List<Product>>
         {
-            public List<Product> Execute(HtmlDocument doc)
+            public override List<Product> ExecuteCore(HtmlDocument doc)
             {
                 var container = doc.DocumentNode.SelectSingleNode("//div[@id='mainResults']");
 

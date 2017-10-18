@@ -8,9 +8,9 @@ namespace EagleEye.Extractor.Amazon
 {
     public partial class AmazonHttpClient
     {
-        public class ExtractDepartments
+        public class ExtractDepartments : ExecuteBase<List<Department>>
         {
-            public List<Department> Execute(HtmlDocument doc)
+            public override List<Department> ExecuteCore(HtmlDocument doc)
             {
                 var deptBoxes = doc.DocumentNode
                                    .SelectNodes("//div[@class='fsdDeptBox']");

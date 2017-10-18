@@ -1,5 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Threading;
@@ -67,12 +66,20 @@ namespace EagleEye.Extractor.Console
             var ctr = new CancellationTokenSource();
 
             // departments, sections
-            var departments = httpClient.GetDepartmentalSectionsAsync(ctr.Token).Result;
+            var departments = httpClient.GetDepartmentalSectionsAsync(ctr.Token)
+                                        .Result
+                                        .Where(x => x.Name == "Home, Garden & Tools")
+                                        .ToList();
 
             var sections = departments
-                //.Where(x => x.Name == "Home, Garden & Tools")
                 .SelectMany(x => x.Sections)
+                //.Where(x => x.Name == "Kitchen & Dining")
                 .ToArray();
+
+            //foreach (var s in sections)
+            //{
+            //    s.Categories = await httpClient.GetCategoriesAsync(s, ctr.Token);
+            //}
 
             var getSubCategoryTasks = sections
                 .Select(async x =>
@@ -82,7 +89,7 @@ namespace EagleEye.Extractor.Console
                 })
                 .ToArray();
 
-            await Task.WhenAll(getSubCategoryTasks);
+            await Task.WhenAll(getSubCategoryTasks).ConfigureAwait(false);
 
             return departments;
         }
@@ -103,10 +110,14 @@ namespace EagleEye.Extractor.Console
                         return s;
 
                     var getDetailTasks = products
-                        .Select(async p => await httpClient.GetProductDetailAsync(p, ctr.Token))
+                        .Select(async p =>
+                        {
+                            var pd = await httpClient.GetProductDetailAsync(p, ctr.Token);
+                            return pd;
+                        })
                         .ToArray();
 
-                    await Task.WhenAll(getDetailTasks);
+                    Task.WhenAll(getDetailTasks).Wait(ctr.Token);
 
                     s.Products = getDetailTasks
                         .Select(x => x.Result)
@@ -119,8 +130,12 @@ namespace EagleEye.Extractor.Console
                     lock (_locker)
                     {
                         var subcat = x.Result;
-                        dbContext.Subcategories.Update(subcat);
-                        dbContext.SaveChanges();
+
+                        if (subcat.Products != null && subcat.Products.Count > 0)
+                        {
+                            dbContext.Subcategories.Update(subcat);
+                            dbContext.SaveChanges();
+                        }
                     }
 
                     return x;
