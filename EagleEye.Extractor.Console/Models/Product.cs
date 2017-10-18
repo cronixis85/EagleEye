@@ -55,6 +55,8 @@ namespace EagleEye.Extractor.Console.Models
             Rank = JsonConvert.SerializeObject(rankArr);
         }
 
+        public string Errors { get; set; }
+
         //public List<SubcategoryProduct> SubcategoryProducts { get; set; }
     }
 }

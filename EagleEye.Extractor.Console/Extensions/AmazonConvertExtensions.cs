@@ -84,7 +84,8 @@ namespace EagleEye.Extractor.Console.Extensions
                 ModelNumber = source.ModelNumber,
                 Rating = source.Rating,
                 TotalReviews = source.TotalReviews,
-                FirstAvailableOn = source.FirstAvailableOn
+                FirstAvailableOn = source.FirstAvailableOn,
+                Errors = source.Errors
             };
 
             if (source.Rank != null)

@@ -30,6 +30,9 @@
     <None Update="Amazon\Fakes\productDetails3_product-details_feature_div.html">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
+    <None Update="Amazon\Fakes\productDetails_detailBullet_withDisclaim.html">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
     <None Update="Amazon\Fakes\productDetails_detailBullet.html">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>

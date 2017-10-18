@@ -97,6 +97,7 @@ namespace EagleEye.Extractor.Amazon
                     product.TotalReviews = details.TotalReviews;
                     product.FirstAvailableOn = details.FirstAvailableOn;
                     product.Rank = details.Rank;
+                    product.Errors = details.Errors;
 
                     return product;
                 }

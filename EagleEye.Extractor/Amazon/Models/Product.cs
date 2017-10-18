@@ -32,5 +32,7 @@ namespace EagleEye.Extractor.Amazon.Models
         public Dictionary<string, int> Rank { get; set; }
 
         public DateTime? FirstAvailableOn { get; set; }
+
+        public string Errors { get; set; }
     }
 }

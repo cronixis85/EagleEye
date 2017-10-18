@@ -100,5 +100,27 @@ namespace EagleEye.Extractor.Tests.Amazon
             Assert.Equal(15, details.Rank["Sports & Outdoors > Fan Shop > Sports Equipment > Hockey Equipment > Hockey Gear"]);
             Assert.Null(details.FirstAvailableOn);
         }
+
+        [Fact]
+        public void ShouldReturnProductDetailsDetailWithoutDisclaimInfo()
+        {
+            var doc = GetHtmlDocument("productDetails_detailBullet_withDisclaim.html");
+
+            var details = new AmazonHttpClient.ExtractProductDetails().Execute(doc);
+
+            // https://www.amazon.com/UNEXTATI-Silicone-Card-Slot-Kickstand-iPhone4s/dp/B01FD6CSLY/ref=lp_11971691_1_20?s=musical-instruments&amp;ie=UTF8&amp;qid=1508308547&amp;sr=1-20
+            Assert.Equal(@"UNEXTATI iPhone 4 / iPhone 4s Case, PU Leather Case with Silicone Cover, Magnet Closure, Card-Slot, Kickstand, Wallet Case for Apple iPhone4 / iPhone4s", details.Name);
+            Assert.Equal("UNEXTATI", details.Brand);
+            Assert.Null(details.Dimensions);
+            Assert.Null(details.ItemWeight);
+            Assert.Equal("2.1 ounces", details.ShippingWeight);
+            Assert.Null(details.Manufacturer);
+            Assert.Equal("B01FD6CSLY", details.Asin);
+            Assert.Null(details.ModelNumber);
+            Assert.Equal(5.0f, details.Rating);
+            Assert.Equal(1, details.TotalReviews);
+            Assert.Null(details.Rank);
+            Assert.Null(details.FirstAvailableOn);
+        }
     }
 }

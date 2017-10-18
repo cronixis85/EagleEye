@@ -18,90 +18,91 @@ namespace EagleEye.Extractor.Amazon
 
                 var product = new Product();
 
-                // brand
-                var brandNode = node.SelectSingleNode("//a[@id='bylineInfo']")
-                                ?? node.SelectSingleNode("//div[@id='brandByline_feature_div']")
-                                ?? node.SelectSingleNode("//div[@id='brandBylineWrapper']");
-
-                product.Brand = brandNode?.InnerText.Clean();
-
-                // name
-                var nameNode = node.SelectSingleNode("//span[@id='productTitle']");
-                product.Name = nameNode?.InnerText.Clean();
-
-                // product details table
-                var standardTable = node.SelectSingleNode("//table[@id='productDetails_detailBullets_sections1']");
-
-                if (standardTable != null)
+                try
                 {
-                    var rows = standardTable.Descendants("tr");
+                    // brand
+                    var brandNode = node.SelectSingleNode("//a[@id='bylineInfo']")
+                                    ?? node.SelectSingleNode("//div[@id='brandByline_feature_div']")
+                                    ?? node.SelectSingleNode("//div[@id='brandBylineWrapper']");
 
-                    if (rows == null)
-                        return null;
+                    product.Brand = brandNode?.InnerText.Clean();
 
-                    var details = rows.ToDictionary(
-                        x => x.Descendants("th").Single().InnerText.Clean(),
-                        x => x.Descendants("td").Single().InnerHtml);
+                    // name
+                    var nameNode = node.SelectSingleNode("//span[@id='productTitle']");
+                    product.Name = nameNode?.InnerText.Clean();
 
-                    SetProduct(product, details);
+                    // product details table
+                    var standardTable = node.SelectSingleNode("//table[@id='productDetails_detailBullets_sections1']");
 
-                    return product;
-                }
+                    if (standardTable != null)
+                    {
+                        var rows = standardTable.Descendants("tr");
 
-                // product-details_feature_div
-                var featureDiv = node.SelectSingleNode("//div[@id='product-details_feature_div']");
+                        if (rows == null)
+                            return null;
 
-                if (featureDiv != null)
-                {
-                    var details = featureDiv
-                        .Descendants("table")
-                        .SelectMany(table =>
-                        {
-                            var detailsTable = table
-                                .Descendants("tr")
-                                .Select(tr =>
-                                {
-                                    var td = tr.Elements("td").ToArray();
+                        var details = rows.ToDictionary(
+                            x => x.Descendants("th").Single().InnerText.Clean(),
+                            x => x.Descendants("td").Single().InnerHtml);
 
-                                    var propertyTd = td.SingleOrDefault(x => x.Attributes["class"]?.Value == "label");
-                                    var property = propertyTd?.InnerText.Clean();
+                        SetProduct(product, details);
 
-                                    var valueTd = td.SingleOrDefault(x => x.Attributes["class"]?.Value == "value");
-                                    var value = valueTd?.InnerHtml;
+                        return product;
+                    }
 
-                                    return new
+                    // product-details_feature_div
+                    var featureDiv = node.SelectSingleNode("//div[@id='product-details_feature_div']");
+
+                    if (featureDiv != null)
+                    {
+                        var details = featureDiv
+                            .Descendants("table")
+                            .SelectMany(table =>
+                            {
+                                var detailsTable = table
+                                    .Descendants("tr")
+                                    .Select(tr =>
                                     {
-                                        Key = property,
-                                        Value = value
-                                    };
-                                })
-                                .ToArray();
+                                        var td = tr.Elements("td").ToArray();
 
-                            return detailsTable;
-                        })
-                        .Where(x => x.Key != null)
-                        .ToDictionary(x => x.Key, x => x.Value);
+                                        var propertyTd = td.SingleOrDefault(x => x.Attributes["class"]?.Value == "label");
+                                        var property = propertyTd?.InnerText.Clean();
 
-                    SetProduct(product, details);
+                                        var valueTd = td.SingleOrDefault(x => x.Attributes["class"]?.Value == "value");
+                                        var value = valueTd?.InnerHtml;
 
-                    return product;
-                }
+                                        return new
+                                        {
+                                            Key = property,
+                                            Value = value
+                                        };
+                                    })
+                                    .ToArray();
 
-                // list table
-                var bulletTable = node.SelectSingleNode("//table[@id='productDetailsTable']");
+                                return detailsTable;
+                            })
+                            .Where(x => x.Key != null)
+                            .ToDictionary(x => x.Key, x => x.Value);
 
-                if (bulletTable == null)
-                    bulletTable = node.SelectSingleNode("//div[@id='detail-bullets']")?.Element("table");
+                        SetProduct(product, details);
 
-                if (bulletTable != null)
-                {
-                    try
+                        return product;
+                    }
+
+                    // list table
+                    var bulletTable = node.SelectSingleNode("//table[@id='productDetailsTable']");
+
+                    if (bulletTable == null)
+                        bulletTable = node.SelectSingleNode("//div[@id='detail-bullets']")?.Element("table");
+
+                    if (bulletTable != null)
                     {
                         var details = bulletTable
                             .Element("tr")
                             .Element("td")
-                            .Element("div")
-                            .Element("ul")
+                            .Elements("div")
+                            .SingleOrDefault(x => x.Attributes["class"]?.Value == "content")
+                            ?.Element("ul")
                             .Elements("li")
                             .Select(x =>
                             {
@@ -124,22 +125,14 @@ namespace EagleEye.Extractor.Amazon
                             .ToDictionary(x => x.Key, x => x.Value);
 
                         SetProduct(product, details);
-                    }
-                    catch (Exception e)
-                    {
-                        throw;
-                    }
 
-                    return product;
+                        return product;
+                    }
                 }
-
-                //var detailBullet = node.SelectSingleNode("//div[@id='detail-bullets']");
-
-                //if (detailBullet != null)
-                //{
-
-                //    return product;
-                //}
+                catch (Exception e)
+                {
+                    product.Errors = e.StackTrace;
+                }
 
                 return product;
             }
