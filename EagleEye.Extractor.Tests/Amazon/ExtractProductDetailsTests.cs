@@ -30,6 +30,29 @@ namespace EagleEye.Extractor.Tests.Amazon
         }
 
         [Fact]
+        public void ShouldReturnProductDetails2column()
+        {
+            var doc = GetHtmlDocument("productDetails_2column.html");
+
+            var details = new AmazonHttpClient.ExtractProductDetails().Execute(doc);
+
+            // https://www.amazon.com/gp/product/B00DUHACEE/ref=s9_acsd_top_hd_bw_b8Rp8zL_c_x_w?pf_rd_m=ATVPDKIKX0DER&pf_rd_s=merchandised-search-11&pf_rd_r=E42QZDSFVG27M8GRZY5Q&pf_rd_t=101&pf_rd_p=b12e2fd8-a6df-5946-98d4-be1d821fa03b&pf_rd_i=7740213011
+            Assert.Equal("Zinus Compack Adjustable Steel Bed Frame, for Box Spring & Mattress Set, Fits Full to King", details.Name);
+            Assert.Equal("Zinus", details.Brand);
+            Assert.Equal("53.5 x 70.5 x 7 inches", details.Dimensions);
+            Assert.Equal("25.4 pounds", details.ItemWeight);
+            Assert.Equal("25.4 pounds", details.ShippingWeight);
+            Assert.Null(details.Manufacturer);
+            Assert.Equal("B00IGGJQ6O", details.Asin);
+            Assert.Equal("AZ-SBF-07U", details.ModelNumber);
+            Assert.Equal(4.5f, details.Rating);
+            Assert.Equal(2260, details.TotalReviews);
+            Assert.Equal(422, details.Rank["Home & Kitchen"]);
+            Assert.Equal(3, details.Rank["Home & Kitchen > Furniture > Bedroom Furniture > Beds, Frames & Bases > Bed Frames"]);
+            Assert.Equal(new DateTime(2014, 2, 6), details.FirstAvailableOn);
+        }
+
+        [Fact]
         public void ShouldReturnProductDetailsForListTableInfo()
         {
             var doc = GetHtmlDocument("productDetails2_listTable.html");

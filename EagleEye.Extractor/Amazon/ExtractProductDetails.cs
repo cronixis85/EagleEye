@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Text.RegularExpressions;
+using System.Xml.Linq;
 using EagleEye.Extractor.Amazon.Models;
 using EagleEye.Extractor.Extensions;
 using HtmlAgilityPack;
@@ -30,25 +31,6 @@ namespace EagleEye.Extractor.Amazon
                     // name
                     var nameNode = node.SelectSingleNode("//span[@id='productTitle']");
                     product.Name = nameNode?.InnerText.Clean();
-
-                    // product details table
-                    var standardTable = node.SelectSingleNode("//table[@id='productDetails_detailBullets_sections1']");
-
-                    if (standardTable != null)
-                    {
-                        var rows = standardTable.Descendants("tr");
-
-                        if (rows == null)
-                            return null;
-
-                        var details = rows.ToDictionary(
-                            x => x.Descendants("th").Single().InnerText.Clean(),
-                            x => x.Descendants("td").Single().InnerHtml);
-
-                        SetProduct(product, details);
-
-                        return product;
-                    }
 
                     // product-details_feature_div
                     var featureDiv = node.SelectSingleNode("//div[@id='product-details_feature_div']");
@@ -89,9 +71,37 @@ namespace EagleEye.Extractor.Amazon
                         return product;
                     }
 
+                    // product details table
+                    var standardTableWrapper = node.SelectSingleNode("//div[@id='prodDetails']");
+
+                    if (standardTableWrapper != null)
+                    {
+                        var details = standardTableWrapper
+                            .Descendants("table")
+                            .SelectMany(t =>
+                            {
+                                var rows = t.Descendants("tr");
+
+                                var d = rows?.Select(r => new
+                                {
+                                    Key = r.Descendants("th").Single().InnerText.Clean(),
+                                    Value = r.Descendants("td").Single().InnerHtml
+                                });
+
+                                return d;
+                            })
+                            .Where(d => d != null)
+                            .ToDictionary(x => x.Key, x => x.Value);
+
+                        SetProduct(product, details);
+
+                        return product;
+                    }
+
                     // list table
                     var bulletTable = node.SelectSingleNode("//table[@id='productDetailsTable']");
 
+                    // detailBullet
                     if (bulletTable == null)
                         bulletTable = node.SelectSingleNode("//div[@id='detail-bullets']")?.Element("table");
 
