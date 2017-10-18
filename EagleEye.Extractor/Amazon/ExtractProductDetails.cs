@@ -2,7 +2,6 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Text.RegularExpressions;
-using System.Xml.Linq;
 using EagleEye.Extractor.Amazon.Models;
 using EagleEye.Extractor.Extensions;
 using HtmlAgilityPack;
@@ -149,6 +148,10 @@ namespace EagleEye.Extractor.Amazon
 
             private void SetProduct(Product product, Dictionary<string, string> details)
             {
+                // brand
+                if (product.Brand == null && details.ContainsKey("Brand Name"))
+                    product.Brand = details["Brand Name"].Clean();
+
                 // dimensions
                 if (details.ContainsKey("Product Dimensions"))
                     product.Dimensions = details["Product Dimensions"].Clean();

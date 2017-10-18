@@ -30,7 +30,7 @@ namespace EagleEye.Extractor.Tests.Amazon
         }
 
         [Fact]
-        public void ShouldReturnProductDetails2column()
+        public void ShouldReturnProductDetails2Column()
         {
             var doc = GetHtmlDocument("productDetails_2column.html");
 
@@ -50,6 +50,29 @@ namespace EagleEye.Extractor.Tests.Amazon
             Assert.Equal(422, details.Rank["Home & Kitchen"]);
             Assert.Equal(3, details.Rank["Home & Kitchen > Furniture > Bedroom Furniture > Beds, Frames & Bases > Bed Frames"]);
             Assert.Equal(new DateTime(2014, 2, 6), details.FirstAvailableOn);
+        }
+
+        [Fact]
+        public void ShouldReturnProductDetails3Tables()
+        {
+            var doc = GetHtmlDocument("productDetails_3tables.html");
+
+            var details = new AmazonHttpClient.ExtractProductDetails().Execute(doc);
+
+            // https://www.amazon.com/Apple-ME088LL-27-Inch-Certified-Refurbished/dp/B00M4LWO8O/ref=lp_13896603011_1_27?s=pc&amp;ie=UTF8&amp;qid=1508312035&amp;sr=1-27
+            Assert.Equal("Apple iMac ME088LL/A 27-Inch Desktop ( VERSION) (Certified Refurbished)", details.Name);
+            Assert.Equal("Apple", details.Brand);
+            Assert.Equal("25.6 x 20.3 x 8 inches", details.Dimensions);
+            Assert.Equal("21 pounds", details.ItemWeight);
+            Assert.Equal("30.1 pounds", details.ShippingWeight);
+            Assert.Null(details.Manufacturer);
+            Assert.Equal("B00M4LWO8O", details.Asin);
+            Assert.Equal("ME088LL/A", details.ModelNumber);
+            Assert.Equal(4.6f, details.Rating);
+            Assert.Equal(16, details.TotalReviews);
+            Assert.Equal(7415, details.Rank["Computers & Accessories"]);
+            Assert.Equal(144, details.Rank["Computers & Accessories > Desktops > All-in-Ones"]);
+            Assert.Equal(new DateTime(2014, 7, 25), details.FirstAvailableOn);
         }
 
         [Fact]
