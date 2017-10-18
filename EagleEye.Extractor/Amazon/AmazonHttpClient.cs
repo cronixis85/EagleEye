@@ -3,8 +3,10 @@ using System.Collections.Generic;
 using System.Net.Http;
 using System.Threading;
 using System.Threading.Tasks;
+using EagleEye.Extractor.Amazon.Handlers;
 using EagleEye.Extractor.Amazon.Models;
 using EagleEye.Extractor.Extensions;
+using Serilog;
 
 namespace EagleEye.Extractor.Amazon
 {
@@ -15,7 +17,11 @@ namespace EagleEye.Extractor.Amazon
         private static readonly Uri BaseUri = new Uri("https://www.amazon.com");
         private static readonly Uri SiteDirectoryUri = new Uri("/gp/site-directory/", UriKind.Relative);
 
-        public AmazonHttpClient()
+        public AmazonHttpClient() : this (new HttpClientHandler())
+        {
+        }
+
+        public AmazonHttpClient(HttpMessageHandler handler) : base(handler)
         {
             BaseAddress = BaseUri;
         }
@@ -26,6 +32,8 @@ namespace EagleEye.Extractor.Amazon
 
             try
             {
+                Log.Information("Getting Departments");
+
                 using (var response = await GetAsync(SiteDirectoryUri, cancellationToken))
                 {
                     var doc = await response.Content.ReadAsHtmlDocumentAsync();
@@ -44,6 +52,8 @@ namespace EagleEye.Extractor.Amazon
 
             try
             {
+                Log.Information("Getting Categories for Section {Name}", section.Name);
+
                 using (var response = await GetAsync(section.Uri, cancellationToken))
                 {
                     var doc = await response.Content.ReadAsHtmlDocumentAsync();

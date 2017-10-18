@@ -1,14 +1,18 @@
 ﻿using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Net.Http;
 using System.Threading;
 using System.Threading.Tasks;
 using EagleEye.Extractor.Amazon;
+using EagleEye.Extractor.Amazon.Handlers;
 using EagleEye.Extractor.Console.Extensions;
 using EagleEye.Extractor.Console.Models;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Serilog;
+using EagleEye.Extractor.Extensions;
 using Department = EagleEye.Extractor.Amazon.Models.Department;
 
 namespace EagleEye.Extractor.Console
@@ -27,12 +31,23 @@ namespace EagleEye.Extractor.Console
 
             Configuration = builder.Build();
 
-            //setup our DI
+            // setup logging
+            Log.Logger = new LoggerConfiguration()
+                .WriteTo.LiterateConsole()
+                .WriteTo.RollingFile(@"logs\EagleEye.Console-{Date}.txt")
+                .CreateLogger();
+            
+            // setup our DI
             var services = new ServiceCollection()
                 .AddLogging()
                 .AddDbContext<ApplicationDbContext>(options =>
                     options.UseSqlServer(Configuration.GetConnectionString("EagleEyeDb")))
-                .AddSingleton<AmazonHttpClient>()
+                .AddSingleton(_ => new AmazonHttpClient(new HttpClientHandler
+                    {
+                        UseCookies = true
+                    }
+                    .DecorateWith(new DefaultHandler())
+                    .DecorateWith(new LoggingHandler(Log.Logger))))
                 .BuildServiceProvider();
 
             using (var dbContext = services.GetService<ApplicationDbContext>())
@@ -59,6 +74,8 @@ namespace EagleEye.Extractor.Console
 
                 UpdateProducts(httpClient, dbContext, subcats).Wait();
             }
+
+            Log.CloseAndFlush();
         }
 
         private static async Task<List<Department>> UpdateCategoriesAsync(AmazonHttpClient httpClient)
@@ -80,6 +97,8 @@ namespace EagleEye.Extractor.Console
             //{
             //    s.Categories = await httpClient.GetCategoriesAsync(s, ctr.Token);
             //}
+
+            Log.Information("Getting Sections");
 
             var getSubCategoryTasks = sections
                 .Select(async x =>

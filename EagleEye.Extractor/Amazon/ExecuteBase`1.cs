@@ -1,4 +1,6 @@
-﻿using HtmlAgilityPack;
+﻿using System;
+using HtmlAgilityPack;
+using Serilog;
 
 namespace EagleEye.Extractor.Amazon
 {
@@ -8,7 +10,20 @@ namespace EagleEye.Extractor.Amazon
 
         public T Execute(HtmlDocument doc)
         {
-            return ExecuteCore(doc);
+            try
+            {
+                var title = doc.DocumentNode.SelectSingleNode("//title")?.InnerText;
+
+                if (title != null && title.Contains("Robot Check"))
+                    throw new ScraperBlockedException("Amazon has blocked scraper.");
+
+                return ExecuteCore(doc);
+            }
+            catch (Exception e)
+            {
+                Log.Error(e.Message + " " + e.StackTrace);
+                throw;
+            }
         }
     }
 }
