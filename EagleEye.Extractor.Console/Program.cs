@@ -42,12 +42,13 @@ namespace EagleEye.Extractor.Console
                 .AddLogging()
                 .AddDbContext<ApplicationDbContext>(options =>
                     options.UseSqlServer(Configuration.GetConnectionString("EagleEyeDb")))
-                .AddSingleton(_ => new AmazonHttpClient(new HttpClientHandler
-                    {
-                        UseCookies = true
-                    }
-                    .DecorateWith(new DefaultHandler())
-                    .DecorateWith(new LoggingHandler(Log.Logger))))
+                .AddSingleton(_ =>
+                {
+                    var pipeline = new DefaultHandler()
+                        .DecorateWith(new LoggingHandler(Log.Logger));
+
+                    return new AmazonHttpClient(pipeline);
+                })
                 .BuildServiceProvider();
 
             using (var dbContext = services.GetService<ApplicationDbContext>())

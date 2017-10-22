@@ -1,11 +1,19 @@
-﻿using System.Net.Http;
+﻿using System;
+using System.Net;
+using System.Net.Http;
 using System.Threading;
 using System.Threading.Tasks;
 
 namespace EagleEye.Extractor.Amazon.Handlers
 {
-    public class DefaultHandler : DelegatingHandler
+    public class DefaultHandler : HttpClientHandler
     {
+        public DefaultHandler()
+        {
+            UseCookies = true;
+            CookieContainer = new CookieContainer();
+        }
+
         protected override async Task<HttpResponseMessage> SendAsync(
             HttpRequestMessage request,
             CancellationToken cancellationToken)
@@ -21,6 +29,13 @@ namespace EagleEye.Extractor.Amazon.Handlers
             request.Headers.Add("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/61.0.3163.100 Safari/537.36");
 
             var response = await base.SendAsync(request, cancellationToken);
+
+            //var cookies = CookieContainer.GetCookies(new Uri("http://www.amazon.com"));
+            //foreach (Cookie co in cookies)
+            //{
+            //    co.Expires = co.Expires.AddMinutes();
+            //}
+
             return response;
         }
     }

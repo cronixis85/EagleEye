@@ -10,7 +10,7 @@ namespace EagleEye.Extractor.Amazon
 {
     public partial class AmazonHttpClient
     {
-        public class ExtractProductDetails : ExecuteBase<Product>
+        public class ExtractProductDetails : ExtractorBase<Product>
         {
             public override Product ExecuteCore(HtmlDocument doc)
             {

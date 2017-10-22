@@ -9,7 +9,7 @@ namespace EagleEye.Extractor.Amazon
 {
     public partial class AmazonHttpClient
     {
-        public class ExtractCategories : ExecuteBase<List<Category>>
+        public class ExtractCategories : ExtractorBase<List<Category>>
         {
             public override List<Category> ExecuteCore(HtmlDocument doc)
             {

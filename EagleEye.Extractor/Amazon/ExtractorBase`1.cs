@@ -4,7 +4,7 @@ using Serilog;
 
 namespace EagleEye.Extractor.Amazon
 {
-    public abstract class ExecuteBase<T>
+    public abstract class ExtractorBase<T>
     {
         public abstract T ExecuteCore(HtmlDocument doc);
 
@@ -12,11 +12,6 @@ namespace EagleEye.Extractor.Amazon
         {
             try
             {
-                var title = doc.DocumentNode.SelectSingleNode("//title")?.InnerText;
-
-                if (title != null && title.Contains("Robot Check"))
-                    throw new ScraperBlockedException("Amazon has blocked scraper.");
-
                 return ExecuteCore(doc);
             }
             catch (Exception e)
