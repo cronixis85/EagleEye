@@ -91,13 +91,7 @@ namespace EagleEye.Extractor.Console
 
             var sections = departments
                 .SelectMany(x => x.Sections)
-                //.Where(x => x.Name == "Kitchen & Dining")
                 .ToArray();
-
-            //foreach (var s in sections)
-            //{
-            //    s.Categories = await httpClient.GetCategoriesAsync(s, ctr.Token);
-            //}
 
             Log.Information("Getting Sections");
 

@@ -135,22 +135,25 @@ namespace EagleEye.Extractor.Amazon
             return result;
         }
 
-        private async Task<AmazonResponseResult> GetAsyncAsHtmlDoc(Uri uri, CancellationToken cancellationToken)
+        private async Task<AmazonResponseResult> GetAsyncAsHtmlDoc(Uri uri, CancellationToken cancellationToken, bool setRedirectUri = false)
         {
             using (var response = await GetAsync(uri, cancellationToken))
             {
                 if (response.StatusCode == HttpStatusCode.MovedPermanently || response.StatusCode == HttpStatusCode.Found)
                 {
                     var redirectedUri = response.Headers.Location;
-                    return await GetAsyncAsHtmlDoc(redirectedUri, cancellationToken);
+                    return await GetAsyncAsHtmlDoc(redirectedUri, cancellationToken, true);
                 }
+
                 if (response.StatusCode == HttpStatusCode.OK)
                 {
                     var result = new AmazonResponseResult
                     {
-                        HtmlDocument = await response.Content.ReadAsHtmlDocumentAsync(),
-                        RedirectUri = response.Headers.Location
+                        HtmlDocument = await response.Content.ReadAsHtmlDocumentAsync()
                     };
+
+                    if (setRedirectUri)
+                        result.RedirectUri = uri;
 
                     // ensure not blocked
                     var title = new ExtractTitle().Execute(result.HtmlDocument);
