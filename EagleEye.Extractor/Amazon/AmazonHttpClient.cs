@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Net;
 using System.Net.Http;
 using System.Threading;
 using System.Threading.Tasks;
@@ -12,7 +13,7 @@ namespace EagleEye.Extractor.Amazon
 {
     public partial class AmazonHttpClient : HttpClient
     {
-        private static readonly SemaphoreSlim Semaphore = new SemaphoreSlim(7);
+        private static readonly SemaphoreSlim Semaphore = new SemaphoreSlim(10);
 
         private static readonly Uri BaseUri = new Uri("https://www.amazon.com");
         private static readonly Uri SiteDirectoryUri = new Uri("/gp/site-directory/", UriKind.Relative);
@@ -34,8 +35,8 @@ namespace EagleEye.Extractor.Amazon
             {
                 Log.Information("Getting Departments");
 
-                var doc = await GetAsyncAsHtmlDocWithEnsureAllowed(SiteDirectoryUri, cancellationToken);
-                return new ExtractDepartments().Execute(doc);
+                var result = await GetAsyncAsHtmlDocWithEnsureAllowed(SiteDirectoryUri, cancellationToken);
+                return new ExtractDepartments().Execute(result.HtmlDocument);
             }
             finally
             {
@@ -51,8 +52,8 @@ namespace EagleEye.Extractor.Amazon
             {
                 Log.Information("Getting Categories for Section {Name}", section.Name);
 
-                var doc = await GetAsyncAsHtmlDocWithEnsureAllowed(section.Uri, cancellationToken);
-                return new ExtractCategories().Execute(doc);
+                var result = await GetAsyncAsHtmlDocWithEnsureAllowed(section.Uri, cancellationToken);
+                return new ExtractCategories().Execute(result.HtmlDocument);
             }
             finally
             {
@@ -66,8 +67,8 @@ namespace EagleEye.Extractor.Amazon
 
             try
             {
-                var doc = await GetAsyncAsHtmlDocWithEnsureAllowed(uri, cancellationToken);
-                return new ExtractProducts().Execute(doc);
+                var result = await GetAsyncAsHtmlDocWithEnsureAllowed(uri, cancellationToken);
+                return new ExtractProducts().Execute(result.HtmlDocument);
             }
             finally
             {
@@ -81,11 +82,16 @@ namespace EagleEye.Extractor.Amazon
 
             try
             {
-                var doc = await GetAsyncAsHtmlDocWithEnsureAllowed(product.Uri, cancellationToken);
-                var details = new ExtractProductDetails().Execute(doc);
+                var result = await GetAsyncAsHtmlDocWithEnsureAllowed(product.Uri, cancellationToken);
+                var details = new ExtractProductDetails().Execute(result.HtmlDocument);
+
+                if (result.RedirectUri != null)
+                    product.Url = result.RedirectUri.OriginalString;
 
                 product.Name = details.Name;
                 product.Brand = details.Brand;
+                product.CurrentPrice = details.CurrentPrice;
+                product.OriginalPrice = details.OriginalPrice;
                 product.Dimensions = details.Dimensions;
                 product.ItemWeight = details.ItemWeight;
                 product.ShippingWeight = details.ShippingWeight;
@@ -106,16 +112,16 @@ namespace EagleEye.Extractor.Amazon
             }
         }
 
-        private async Task<HtmlDocument> GetAsyncAsHtmlDocWithEnsureAllowed(Uri uri, CancellationToken cancellationToken)
+        private async Task<AmazonResponseResult> GetAsyncAsHtmlDocWithEnsureAllowed(Uri uri, CancellationToken cancellationToken)
         {
             var success = true;
-            HtmlDocument doc = null;
+            AmazonResponseResult result = null;
 
             do
             {
                 try
                 {
-                    doc = await GetAsyncAsHtmlDoc(uri, cancellationToken);
+                    result = await GetAsyncAsHtmlDoc(uri, cancellationToken);
                 }
                 catch (ScraperBlockedException e)
                 {
@@ -126,23 +132,44 @@ namespace EagleEye.Extractor.Amazon
                 }
             } while (!success);
 
-            return doc;
+            return result;
         }
 
-        private async Task<HtmlDocument> GetAsyncAsHtmlDoc(Uri uri, CancellationToken cancellationToken)
+        private async Task<AmazonResponseResult> GetAsyncAsHtmlDoc(Uri uri, CancellationToken cancellationToken)
         {
             using (var response = await GetAsync(uri, cancellationToken))
             {
-                var doc = await response.Content.ReadAsHtmlDocumentAsync();
+                if (response.StatusCode == HttpStatusCode.MovedPermanently || response.StatusCode == HttpStatusCode.Found)
+                {
+                    var redirectedUri = response.Headers.Location;
+                    return await GetAsyncAsHtmlDoc(redirectedUri, cancellationToken);
+                }
+                if (response.StatusCode == HttpStatusCode.OK)
+                {
+                    var result = new AmazonResponseResult
+                    {
+                        HtmlDocument = await response.Content.ReadAsHtmlDocumentAsync(),
+                        RedirectUri = response.Headers.Location
+                    };
 
-                // ensure not blocked
-                var title = new ExtractTitle().Execute(doc);
+                    // ensure not blocked
+                    var title = new ExtractTitle().Execute(result.HtmlDocument);
 
-                if (title != null && title.Contains("Robot Check"))
-                    throw new ScraperBlockedException("Amazon has blocked scraper.");
+                    if (title != null && title.Contains("Robot Check"))
+                        throw new ScraperBlockedException("Amazon has blocked scraper.");
 
-                return doc;
+                    return result;
+                }
+
+                throw new NotSupportedException();
             }
+        }
+
+        private class AmazonResponseResult
+        {
+            public Uri RedirectUri { get; set; }
+
+            public HtmlDocument HtmlDocument { get; set; }
         }
     }
 }

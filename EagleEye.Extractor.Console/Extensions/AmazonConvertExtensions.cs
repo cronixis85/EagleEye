@@ -77,6 +77,8 @@ namespace EagleEye.Extractor.Console.Extensions
                 Asin = source.Asin,
                 Url = source.Url,
                 Brand = source.Brand,
+                CurrentPrice = source.CurrentPrice,
+                OriginalPrice = source.OriginalPrice,
                 Dimensions = source.Dimensions,
                 ItemWeight = source.ItemWeight,
                 ShippingWeight = source.ShippingWeight,

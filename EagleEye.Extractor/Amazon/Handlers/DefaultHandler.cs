@@ -11,6 +11,7 @@ namespace EagleEye.Extractor.Amazon.Handlers
         public DefaultHandler()
         {
             UseCookies = true;
+            AllowAutoRedirect = false;
             CookieContainer = new CookieContainer();
         }
 

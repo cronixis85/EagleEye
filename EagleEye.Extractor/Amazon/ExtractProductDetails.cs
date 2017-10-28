@@ -31,6 +31,41 @@ namespace EagleEye.Extractor.Amazon
                     var nameNode = node.SelectSingleNode("//span[@id='productTitle']");
                     product.Name = nameNode?.InnerText.Clean();
 
+                    // price
+                    var priceNode = node.SelectSingleNode("//div[@id='price']");
+
+                    if (priceNode != null)
+                    {
+                        var pricing = priceNode
+                            .Descendants("table")
+                            .SelectMany(t =>
+                            {
+                                var detailsTable = t
+                                    .Descendants("tr")
+                                    .Where(tr => tr.Attributes["id"]?.Value != "regularprice_savings" && tr.Attributes["id"]?.Value != "dealprice_savings")
+                                    .Select(tr =>
+                                    {
+                                        var td = tr.Elements("td").ToArray();
+                                        
+                                        var property = td[0]?.InnerText.Clean().Replace(":", "");
+                                        var value = td[1].Element("span").InnerText.Replace("$", "").Replace(",", "");
+
+                                        return new
+                                        {
+                                            Key = property,
+                                            Value = decimal.Parse(value)
+                                        };
+                                    })
+                                    .ToArray();
+
+                                return detailsTable;
+                            })
+                            .Where(x => x.Key != null)
+                            .ToDictionary(x => x.Key, x => x.Value);
+
+                        SetPrice(product, pricing);
+                    }
+
                     // product-details_feature_div
                     var featureDiv = node.SelectSingleNode("//div[@id='product-details_feature_div']");
 
@@ -144,6 +179,55 @@ namespace EagleEye.Extractor.Amazon
                 }
 
                 return product;
+            }
+
+            private void SetPrice(Product product, Dictionary<string, decimal> pricing)
+            {
+                decimal? sale = null;
+                decimal? price = null;
+
+                if (pricing.ContainsKey("List Price") || pricing.ContainsKey("With Deal"))
+                {
+                    if (pricing.ContainsKey("List Price"))
+                        price = pricing["List Price"];
+
+                    if (pricing.ContainsKey("With Deal"))
+                        sale = pricing["With Deal"];
+                }
+                else if (pricing.ContainsKey("Was"))
+                {
+                    if (pricing.ContainsKey("Was"))
+                        price = pricing["Was"];
+
+                    if (pricing.ContainsKey("Price"))
+                        sale = pricing["Price"];
+                }
+                else
+                {
+                    if (pricing.ContainsKey("Price"))
+                        sale = pricing["Price"];
+
+                    if (pricing.ContainsKey("Sale"))
+                        sale = pricing["Sale"];
+                }
+
+                if (sale == null && price != null)
+                {
+                    product.CurrentPrice = price;
+                    product.OriginalPrice = price;
+                }
+                else if (sale != null)
+                {
+                    if (price == null)
+                    {
+                        product.CurrentPrice = sale;
+                    }
+                    else
+                    {
+                        product.CurrentPrice = sale;
+                        product.OriginalPrice = price;
+                    }
+                }
             }
 
             private void SetProduct(Product product, Dictionary<string, string> details)

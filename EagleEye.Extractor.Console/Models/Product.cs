@@ -24,6 +24,10 @@ namespace EagleEye.Extractor.Console.Models
 
         public string Brand { get; set; }
 
+        public decimal? CurrentPrice { get; set; }
+
+        public decimal? OriginalPrice { get; set; }
+
         public string Dimensions { get; set; }
 
         public string ItemWeight { get; set; }

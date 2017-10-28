@@ -16,6 +16,8 @@ namespace EagleEye.Extractor.Tests.Amazon
             // https://www.amazon.com/gp/product/B00DUHACEE/ref=s9_acsd_top_hd_bw_b8Rp8zL_c_x_w?pf_rd_m=ATVPDKIKX0DER&pf_rd_s=merchandised-search-11&pf_rd_r=E42QZDSFVG27M8GRZY5Q&pf_rd_t=101&pf_rd_p=b12e2fd8-a6df-5946-98d4-be1d821fa03b&pf_rd_i=7740213011
             Assert.Equal("French Press Coffee & Tea Makers 8 Cup (1 liter, 34 oz)--Best Coffee Press Pot with 304 Grade Stainless Steel & Heat-Resistant Borosilicate Glass--2 Free Bonus Stainless Steel Screen in Package", details.Name);
             Assert.Equal("SterlingPro", details.Brand);
+            Assert.Equal(25.95m, details.CurrentPrice);
+            Assert.Null(details.OriginalPrice);
             Assert.Equal("8 x 5 x 4.3 inches", details.Dimensions);
             Assert.Equal("14.4 ounces", details.ItemWeight);
             Assert.Equal("1.7 pounds", details.ShippingWeight);
@@ -39,6 +41,8 @@ namespace EagleEye.Extractor.Tests.Amazon
             // https://www.amazon.com/Zinus-Compack-Adjustable-Spring-Mattress/dp/B00IGGJQ6O/ref=lp_3733101_1_2?s=furniture&amp;ie=UTF8&amp;qid=1508310075&amp;sr=1-2
             Assert.Equal("Zinus Compack Adjustable Steel Bed Frame, for Box Spring & Mattress Set, Fits Full to King", details.Name);
             Assert.Equal("Zinus", details.Brand);
+            Assert.Equal(49.32m, details.CurrentPrice);
+            Assert.Equal(49.32m, details.OriginalPrice);
             Assert.Equal("53.5 x 70.5 x 7 inches", details.Dimensions);
             Assert.Equal("25.4 pounds", details.ItemWeight);
             Assert.Equal("25.4 pounds", details.ShippingWeight);
@@ -62,6 +66,8 @@ namespace EagleEye.Extractor.Tests.Amazon
             // https://www.amazon.com/Apple-ME088LL-27-Inch-Certified-Refurbished/dp/B00M4LWO8O/ref=lp_13896603011_1_27?s=pc&amp;ie=UTF8&amp;qid=1508312035&amp;sr=1-27
             Assert.Equal("Apple iMac ME088LL/A 27-Inch Desktop ( VERSION) (Certified Refurbished)", details.Name);
             Assert.Equal("Apple", details.Brand);
+            Assert.Equal(1127.59m, details.CurrentPrice);
+            Assert.Equal(1127.59m, details.OriginalPrice);
             Assert.Equal("25.6 x 20.3 x 8 inches", details.Dimensions);
             Assert.Equal("21 pounds", details.ItemWeight);
             Assert.Equal("30.1 pounds", details.ShippingWeight);
@@ -85,6 +91,8 @@ namespace EagleEye.Extractor.Tests.Amazon
             // https://www.amazon.com/Puller-America-unfinished-American-Plywood/dp/B075YYXYMB/ref=lp_289719_1_2_sspa?s=kitchen&ie=UTF8&qid=1508011883&sr=1-2-spons&psc=1
             Assert.Equal(@"h-BAR Oven Rack Push Puller for Baking, Made in America 17"" L x 4.75"" H x 0.5"" W, unfinished American Birch Plywood - hBAR at Home Series", details.Name);
             Assert.Equal("hBARSCI", details.Brand);
+            Assert.Equal(9.99m, details.CurrentPrice);
+            Assert.Equal(9.99m, details.OriginalPrice);
             Assert.Equal("17 x 0.5 x 4.8 inches ; 3 ounces", details.Dimensions);
             Assert.Null(details.ItemWeight);
             Assert.Equal("15.2 ounces", details.ShippingWeight);
@@ -108,6 +116,8 @@ namespace EagleEye.Extractor.Tests.Amazon
             // https://www.amazon.com/Black-Beginners-Compatible-Connectivity-Zivix/dp/B0149YRRXA/ref=lp_11971381_1_2?s=musical-instruments&amp%3Bie=UTF8&amp%3Bqid=1508047561&amp%3Bsr=1-2&th=1
             Assert.Equal(@"Jamstik+ Black Portable App Enabled MIDI Electric Guitar, for Beginners and Music Creators, iOS, Android & Mac Compatible, with Bluetooth Connectivity, Powered by Zivix", details.Name);
             Assert.Equal("Zivix", details.Brand);
+            Assert.Equal(199.00m, details.CurrentPrice);
+            Assert.Equal(299.99m, details.OriginalPrice);
             Assert.Equal("16.5 x 3.5 x 2.5 inches", details.Dimensions);
             Assert.Equal("1.9 pounds", details.ItemWeight);
             Assert.Equal("3.2 pounds", details.ShippingWeight);
@@ -132,6 +142,8 @@ namespace EagleEye.Extractor.Tests.Amazon
             // https://www.amazon.com/Franklin-Sports-Mini-Hockey-Goal/dp/B00T7DZRUO/ref=lp_5680888011_1_11?s=team-sports&amp;ie=UTF8&amp;qid=1508067481&amp;sr=1-11
             Assert.Equal(@"Franklin Sports NHL Mini Hockey Goal Set", details.Name);
             Assert.Equal("Franklin Sports", details.Brand);
+            Assert.Equal(17.99m, details.CurrentPrice);
+            Assert.Equal(19.99m, details.OriginalPrice);
             Assert.Equal("28 x 7 x 3 inches ; 2 pounds", details.Dimensions);
             Assert.Null(details.ItemWeight);
             Assert.Equal("2.2 pounds", details.ShippingWeight);
@@ -157,6 +169,8 @@ namespace EagleEye.Extractor.Tests.Amazon
             // https://www.amazon.com/UNEXTATI-Silicone-Card-Slot-Kickstand-iPhone4s/dp/B01FD6CSLY/ref=lp_11971691_1_20?s=musical-instruments&amp;ie=UTF8&amp;qid=1508308547&amp;sr=1-20
             Assert.Equal(@"UNEXTATI iPhone 4 / iPhone 4s Case, PU Leather Case with Silicone Cover, Magnet Closure, Card-Slot, Kickstand, Wallet Case for Apple iPhone4 / iPhone4s", details.Name);
             Assert.Equal("UNEXTATI", details.Brand);
+            Assert.Equal(6.99m, details.CurrentPrice);
+            Assert.Equal(14.99m, details.OriginalPrice);
             Assert.Null(details.Dimensions);
             Assert.Null(details.ItemWeight);
             Assert.Equal("2.1 ounces", details.ShippingWeight);
