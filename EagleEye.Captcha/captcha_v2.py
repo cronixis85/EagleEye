@@ -32,101 +32,42 @@ def captcha_solver(path, threshold):
             separators.append(colmean_index[0][i])
 
     if len(separators) == 5: 
-        cv2.imwrite('Digit1.jpg', image[:,min_val:separators[0]])
-        cv2.imwrite('Digit2.jpg', image[:,separators[0] + 1:separators[1]])
-        cv2.imwrite('Digit3.jpg', image[:,separators[1] + 1:separators[2]])
-        cv2.imwrite('Digit4.jpg', image[:,separators[2] + 1:separators[3]])
-        cv2.imwrite('Digit5.jpg', image[:,separators[3] + 1:separators[4]])
-        cv2.imwrite('Digit6.jpg', image[:,separators[4] + 1:max_val])
+
+        album = {
+            1: image[:,min_val:separators[0]],
+            2: image[:,separators[0] + 1:separators[1]],
+            3: image[:,separators[1] + 1:separators[2]],
+            4: image[:,separators[2] + 1:separators[3]],
+            5: image[:,separators[3] + 1:separators[4]],
+            6: image[:,separators[4] + 1:max_val]
+        }
         
-        string = []
-        for i in np.arange(1,7):
-            if i == 1:
-                img = Image.open('Digit' + str(i) + '.jpg')
-                # converted to have an alpha layer
-                im2 = img.convert('RGBA')
-                # rotated image
+        string = ""
+
+        for i in np.arange(1, 7):
+            img = Image.fromarray(album[i])
+            # converted to have an alpha layer
+            im2 = img.convert('RGBA')
+
+            # rotated image
+            if i in [1, 3, 5]:
                 rot = im2.rotate(15, expand=1)
-                # a white image same size as rotated image
-                fff = Image.new('RGBA', rot.size, (255,) * 4)
-                # create a composite image using the alpha layer of rot as a
-                # mask
-                out = Image.composite(rot, fff, rot)
-                            
-                out.convert(img.mode).save('pic.jpg')
-                 
-                char = pytesseract.image_to_string(Image.open('pic.jpg'),
-                                                   config='-c tessedit_char_whitelist=ABCDEFGHIJKLMNOPQRSTUVWXYZ -psm 10')[0].upper()   
-                                                           
-                string = char
-            elif i in [3,5]:
-                img = Image.open('Digit' + str(i) + '.jpg')
-                # converted to have an alpha layer
-                im2 = img.convert('RGBA')
-                # rotated image
-                rot = im2.rotate(15, expand=1)
-                # a white image same size as rotated image
-                fff = Image.new('RGBA', rot.size, (255,) * 4)
-                # create a composite image using the alpha layer of rot as a
-                # mask
-                out = Image.composite(rot, fff, rot)
-                            
-                out.convert(img.mode).save('pic.jpg')
-                 
-                char = pytesseract.image_to_string(Image.open('pic.jpg'),
-                                                   config='-c tessedit_char_whitelist=ABCDEFGHIJKLMNOPQRSTUVWXYZ -psm 10')[0].upper()   
-                                                           
-                string += char
             else:
-                img = Image.open('Digit' + str(i) + '.jpg')
-                # converted to have an alpha layer
-                im2 = img.convert('RGBA')
-                # rotated image
                 rot = im2.rotate(-15, expand=1)
-                # a white image same size as rotated image
-                fff = Image.new('RGBA', rot.size, (255,) * 4)
-                # create a composite image using the alpha layer of rot as a
-                # mask
-                out = Image.composite(rot, fff, rot)
-                            
-                out.convert(img.mode).save('pic.jpg')
-                 
-                char = pytesseract.image_to_string(Image.open('pic.jpg'),
-                                                   config='-c tessedit_char_whitelist=ABCDEFGHIJKLMNOPQRSTUVWXYZ -psm 10')[0].upper()   
-                                                           
-                string += char
+
+            # a white image same size as rotated image
+            fff = Image.new('RGBA', rot.size, (255,) * 4)
+            # create a composite image using the alpha layer of rot as a mask
+            out = Image.composite(rot, fff, rot)
+
+            out.convert(img.mode).save('pic.jpg')
+            char = runTesseract(Image.open('pic.jpg'))
+
+            string += char
     else: 
         string = 'Cannot solve Captcha'
         
     return(string)
 
-imageDir = os.path.join(os.getcwd(), "images")
-
-def solveImage(fileName):
-    result = captcha_solver(os.path.join(imageDir, fileName + ".jpg"), 245.0);
-    print(fileName + " == " + result + ": " + str(fileName == result))
-
-solveImage("ACYKRB")
-solveImage("AKBFRA")
-solveImage("BPKURG")
-solveImage("CBTRUR")
-solveImage("CKFEBX")
-solveImage("CLMFFE")
-solveImage("CRYNRM")
-solveImage("EAAMGR")
-solveImage("HERYME")
-solveImage("HLGGNU")
-solveImage("JPUYJP")
-solveImage("JRMBJG")
-solveImage("JTNLHN")
-solveImage("KHNRFG")
-solveImage("LEAMXK")
-solveImage("LYGJHY")
-solveImage("MXJAAG")
-solveImage("NNPPHP")
-solveImage("NTJLBM")
-solveImage("PUFTXE")
-solveImage("PXCACE")
-solveImage("TEERXM")
-solveImage("XNKHFY")
-solveImage("YMEPAX")
+def runTesseract(img):
+    return pytesseract.image_to_string(img, config='-c tessedit_char_whitelist=ABCDEFGHIJKLMNOPQRSTUVWXYZ -psm 10')[0].upper()

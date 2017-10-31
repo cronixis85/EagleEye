@@ -4,7 +4,7 @@
     <SchemaVersion>2.0</SchemaVersion>
     <ProjectGuid>60ac86e6-2b55-44f9-a0aa-a3caa9258122</ProjectGuid>
     <ProjectHome>.</ProjectHome>
-    <StartupFile>captcha_v2.py</StartupFile>
+    <StartupFile>main.py</StartupFile>
     <SearchPath>
     </SearchPath>
     <WorkingDirectory>.</WorkingDirectory>
@@ -25,6 +25,7 @@
   <ItemGroup>
     <Compile Include="captcha_v2.py" />
     <Compile Include="EagleEye.Captcha.py" />
+    <Compile Include="main.py" />
   </ItemGroup>
   <ItemGroup>
     <Content Include="images\ACYKRB.jpg" />
