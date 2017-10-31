@@ -14,9 +14,14 @@ namespace EagleEye.Extractor.Amazon
             {
                 return ExecuteCore(doc);
             }
+            catch (ScrapingException e)
+            {
+                Log.Error(e.Message + e.StackTrace + "\n" + doc.DocumentNode.OuterHtml);
+                throw;
+            }
             catch (Exception e)
             {
-                Log.Error(e.Message + " " + e.StackTrace);
+                Log.Error(e.Message + e.StackTrace);
                 throw;
             }
         }

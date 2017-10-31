@@ -21,6 +21,8 @@ namespace EagleEye.Extractor.Console.Models
 
         public Uri Uri => new Uri(Url);
 
+        public bool Enabled { get; set; }
+
         public List<Product> Products { get; set; }
 
         //public List<SubcategoryProduct> SubcategoryProducts { get; set; }

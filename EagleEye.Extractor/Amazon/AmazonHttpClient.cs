@@ -13,7 +13,7 @@ namespace EagleEye.Extractor.Amazon
 {
     public partial class AmazonHttpClient : HttpClient
     {
-        private static readonly SemaphoreSlim Semaphore = new SemaphoreSlim(10);
+        private static readonly SemaphoreSlim Semaphore = new SemaphoreSlim(6);
 
         private static readonly Uri BaseUri = new Uri("https://www.amazon.com");
         private static readonly Uri SiteDirectoryUri = new Uri("/gp/site-directory/", UriKind.Relative);
@@ -29,110 +29,89 @@ namespace EagleEye.Extractor.Amazon
 
         public async Task<List<Department>> GetDepartmentalSectionsAsync(CancellationToken cancellationToken)
         {
-            await Semaphore.WaitAsync(TimeSpan.FromHours(1), cancellationToken);
+            Log.Information("Getting Departments");
 
-            try
-            {
-                Log.Information("Getting Departments");
-
-                var result = await GetAsyncAsHtmlDocWithEnsureAllowed(SiteDirectoryUri, cancellationToken);
-                return new ExtractDepartments().Execute(result.HtmlDocument);
-            }
-            finally
-            {
-                Semaphore.Release();
-            }
+            var result = await GetAsyncAsHtmlDocWithEnsureAllowed(SiteDirectoryUri, cancellationToken);
+            return new ExtractDepartments().Execute(result.HtmlDocument);
         }
 
-        public async Task<List<Category>> GetCategoriesAsync(Section section, CancellationToken cancellationToken)
+        public async Task<List<Category>> GetCategoriesAsync(Uri sectionUri, CancellationToken cancellationToken)
         {
-            await Semaphore.WaitAsync(TimeSpan.FromHours(1), cancellationToken);
+            var result = await GetAsyncAsHtmlDocWithEnsureAllowed(sectionUri, cancellationToken);
+            var categories = new ExtractCategories().Execute(result.HtmlDocument);
 
-            try
-            {
-                Log.Information("Getting Categories for Section {Name}", section.Name);
+            Log.Information("Found {Count} Categories in Section {Uri}", categories?.Count ?? 0, sectionUri);
 
-                var result = await GetAsyncAsHtmlDocWithEnsureAllowed(section.Uri, cancellationToken);
-                return new ExtractCategories().Execute(result.HtmlDocument);
-            }
-            finally
-            {
-                Semaphore.Release();
-            }
+            return categories;
         }
 
-        public async Task<List<Product>> GetProductsAsync(Uri uri, CancellationToken cancellationToken)
+        public async Task<List<Product>> GetProductsAsync(Uri subcategoryUri, CancellationToken cancellationToken)
         {
-            await Semaphore.WaitAsync(TimeSpan.FromHours(1), cancellationToken);
+            var result = await GetAsyncAsHtmlDocWithEnsureAllowed(subcategoryUri, cancellationToken);
+            var products = new ExtractProducts().Execute(result.HtmlDocument);
 
-            try
-            {
-                var result = await GetAsyncAsHtmlDocWithEnsureAllowed(uri, cancellationToken);
-                return new ExtractProducts().Execute(result.HtmlDocument);
-            }
-            finally
-            {
-                Semaphore.Release();
-            }
+            Log.Information("Found {Count} Products in Subcategory {Uri}", products?.Count ?? 0, subcategoryUri);
+
+            return products;
         }
 
         public async Task<Product> GetProductDetailAsync(Product product, CancellationToken cancellationToken)
         {
-            await Semaphore.WaitAsync(TimeSpan.FromHours(1), cancellationToken);
+            var result = await GetAsyncAsHtmlDocWithEnsureAllowed(product.Uri, cancellationToken);
+            var details = new ExtractProductDetails().Execute(result.HtmlDocument);
 
+            if (result.RedirectUri != null)
+                product.Url = result.RedirectUri.OriginalString;
+
+            product.Name = details.Name;
+            product.Brand = details.Brand;
+            product.CurrentPrice = details.CurrentPrice;
+            product.OriginalPrice = details.OriginalPrice;
+            product.Dimensions = details.Dimensions;
+            product.ItemWeight = details.ItemWeight;
+            product.ShippingWeight = details.ShippingWeight;
+            product.Manufacturer = details.Manufacturer;
+            product.Asin = details.Asin;
+            product.ModelNumber = details.ModelNumber;
+            product.Rating = details.Rating;
+            product.TotalReviews = details.TotalReviews;
+            product.FirstAvailableOn = details.FirstAvailableOn;
+            product.Rank = details.Rank;
+            product.Errors = details.Errors;
+
+            return product;
+        }
+
+        private async Task<AmazonResponseResult> GetAsyncAsHtmlDocWithEnsureAllowed(Uri uri, CancellationToken cancellationToken)
+        {
             try
             {
-                var result = await GetAsyncAsHtmlDocWithEnsureAllowed(product.Uri, cancellationToken);
-                var details = new ExtractProductDetails().Execute(result.HtmlDocument);
+                await Semaphore.WaitAsync(TimeSpan.FromHours(1), cancellationToken);
 
-                if (result.RedirectUri != null)
-                    product.Url = result.RedirectUri.OriginalString;
+                var success = true;
+                AmazonResponseResult result = null;
 
-                product.Name = details.Name;
-                product.Brand = details.Brand;
-                product.CurrentPrice = details.CurrentPrice;
-                product.OriginalPrice = details.OriginalPrice;
-                product.Dimensions = details.Dimensions;
-                product.ItemWeight = details.ItemWeight;
-                product.ShippingWeight = details.ShippingWeight;
-                product.Manufacturer = details.Manufacturer;
-                product.Asin = details.Asin;
-                product.ModelNumber = details.ModelNumber;
-                product.Rating = details.Rating;
-                product.TotalReviews = details.TotalReviews;
-                product.FirstAvailableOn = details.FirstAvailableOn;
-                product.Rank = details.Rank;
-                product.Errors = details.Errors;
+                do
+                {
+                    try
+                    {
+                        result = await GetAsyncAsHtmlDoc(uri, cancellationToken);
+                    }
+                    catch (ScraperBlockedException e)
+                    {
+                        success = false;
 
-                return product;
+                        Log.Information("Scrape blocked on {Url}. Retrying in 1 min.", uri.OriginalString);
+                        Thread.Sleep(TimeSpan.FromMinutes(1));
+                    }
+                } while (!success);
+
+                return result;
             }
             finally
             {
                 Semaphore.Release();
             }
-        }
-
-        private async Task<AmazonResponseResult> GetAsyncAsHtmlDocWithEnsureAllowed(Uri uri, CancellationToken cancellationToken)
-        {
-            var success = true;
-            AmazonResponseResult result = null;
-
-            do
-            {
-                try
-                {
-                    result = await GetAsyncAsHtmlDoc(uri, cancellationToken);
-                }
-                catch (ScraperBlockedException e)
-                {
-                    success = false;
-
-                    Log.Information("Scrape blocked on {Url}. Retrying in 1 min.", uri.OriginalString);
-                    Thread.Sleep(TimeSpan.FromMinutes(1));
-                }
-            } while (!success);
-
-            return result;
         }
 
         private async Task<AmazonResponseResult> GetAsyncAsHtmlDoc(Uri uri, CancellationToken cancellationToken, bool setRedirectUri = false)

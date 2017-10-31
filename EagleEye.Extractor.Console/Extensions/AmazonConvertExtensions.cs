@@ -16,7 +16,7 @@ namespace EagleEye.Extractor.Console.Extensions
             return new Department
             {
                 Name = source.Name,
-                Sections = source.Sections?.ToDbSections().ToList()
+                Sections = source.Sections?.ToDbSections().ToList(),
             };
         }
 
@@ -31,7 +31,8 @@ namespace EagleEye.Extractor.Console.Extensions
             {
                 Name = source.Name,
                 Url = source.Url,
-                Categories = source.Categories?.ToDbCategories().ToList()
+                Categories = source.Categories?.ToDbCategories().ToList(),
+                Enabled = true
             };
         }
 
@@ -60,7 +61,8 @@ namespace EagleEye.Extractor.Console.Extensions
             {
                 Name = source.Name,
                 Url = source.Url,
-                Products = source.Products?.ToDbProducts().ToList()
+                Products = source.Products?.ToDbProducts().ToList(),
+                Enabled = true
             };
         }
 

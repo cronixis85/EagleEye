@@ -15,7 +15,10 @@ namespace EagleEye.Extractor.Amazon
                 var deptBoxes = doc.DocumentNode
                                    .SelectNodes("//div[@class='fsdDeptBox']");
 
-                var siteSections = deptBoxes?
+                if (deptBoxes == null)
+                    throw new ScrapingException("cannot find: //div[@class='fsdDeptBox']");
+
+                var departments = deptBoxes
                     .Select(x =>
                     {
                         var dept = new Department
@@ -37,7 +40,7 @@ namespace EagleEye.Extractor.Amazon
                     })
                     .ToList();
 
-                return siteSections;
+                return departments;
             }
         }
     }

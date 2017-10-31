@@ -4,7 +4,7 @@
     <SchemaVersion>2.0</SchemaVersion>
     <ProjectGuid>60ac86e6-2b55-44f9-a0aa-a3caa9258122</ProjectGuid>
     <ProjectHome>.</ProjectHome>
-    <StartupFile>EagleEye.Captcha.py</StartupFile>
+    <StartupFile>captcha_v2.py</StartupFile>
     <SearchPath>
     </SearchPath>
     <WorkingDirectory>.</WorkingDirectory>
@@ -12,6 +12,7 @@
     <Name>EagleEye.Captcha</Name>
     <RootNamespace>EagleEye.Captcha</RootNamespace>
     <InterpreterId>Global|ContinuumAnalytics|Anaconda36-64</InterpreterId>
+    <IsWindowsApplication>False</IsWindowsApplication>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)' == 'Debug' ">
     <DebugSymbols>true</DebugSymbols>
@@ -22,11 +23,34 @@
     <EnableUnmanagedDebugging>false</EnableUnmanagedDebugging>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Include="captcha_v2.py" />
     <Compile Include="EagleEye.Captcha.py" />
   </ItemGroup>
   <ItemGroup>
+    <Content Include="images\ACYKRB.jpg" />
     <Content Include="images\AKBFRA.jpg" />
+    <Content Include="images\BPKURG.jpg" />
+    <Content Include="images\CBTRUR.jpg" />
+    <Content Include="images\CKFEBX.jpg" />
+    <Content Include="images\CLMFFE.jpg" />
+    <Content Include="images\CRYNRM.jpg" />
+    <Content Include="images\EAAMGR.jpg" />
+    <Content Include="images\HERYME.jpg" />
+    <Content Include="images\HLGGNU.jpg" />
+    <Content Include="images\JPUYJP.jpg" />
+    <Content Include="images\JRMBJG.jpg" />
+    <Content Include="images\JTNLHN.jpg" />
+    <Content Include="images\KHNRFG.jpg" />
+    <Content Include="images\LEAMXK.jpg" />
+    <Content Include="images\LYGJHY.jpg" />
+    <Content Include="images\MXJAAG.jpg" />
+    <Content Include="images\NNPPHP.jpg" />
     <Content Include="images\NTJLBM.jpg" />
+    <Content Include="images\PUFTXE.jpg" />
+    <Content Include="images\PXCACE.jpg" />
+    <Content Include="images\TEERXM.jpg" />
+    <Content Include="images\XNKHFY.jpg" />
+    <Content Include="images\YMEPAX.jpg" />
     <Content Include="readme.md" />
   </ItemGroup>
   <ItemGroup>

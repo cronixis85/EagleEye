@@ -16,9 +16,9 @@ from PIL import Image
 # from subprocess import check_output
  
  
-os.chdir('C:\\Projects\\GitHub\\EagleEye\\EagleEye.Captcha\\images')
+os.chdir(os.path.join(os.getcwd(), "images"))
 pytesseract.pytesseract.tesseract_cmd = 'C:\\Program Files (x86)\\Tesseract-OCR\\tesseract'
-path = 'NTJLBM.jpg'
+#path = 'NTJLBM.jpg'
  
 # path = 'Captcha_rwspoebvrc.jpg'
  
@@ -49,10 +49,10 @@ def captcha_solver(path):
             fff = Image.new('RGBA', rot.size, (255,)*4)
             # create a composite image using the alpha layer of rot as a mask
             out = Image.composite(rot, fff, rot)
-            
-            out.convert(img.mode).save('pic.jpg')
-            char = pytesseract.image_to_string(Image.open('pic.jpg'),
-                                               config='-c tessedit_char_whitelist=ABCDEFGHIJKLMNOPQRSTUVWXYZ -psm 10')[0].upper()                         
+            tmpImg = str(i) + '.jpg'
+
+            out.convert(img.mode).save(tmpImg)
+            char = getImageText(tmpImg)                 
             string = char
         elif i in [2,4]:
             x = int(round(min_val + (i * interval_width)))
@@ -67,10 +67,10 @@ def captcha_solver(path):
             fff = Image.new('RGBA', rot.size, (255,)*4)
             # create a composite image using the alpha layer of rot as a mask
             out = Image.composite(rot, fff, rot)
+            tmpImg = str(i) + '.jpg';
 
-            out.convert(img.mode).save('pic.jpg')
-            char = pytesseract.image_to_string(Image.open('pic.jpg'),
-                                               config='-c tessedit_char_whitelist=ABCDEFGHIJKLMNOPQRSTUVWXYZ -psm 10')[0].upper()   
+            out.convert(img.mode).save(tmpImg)
+            char = getImageText(tmpImg)                
             string += char
         else:
             x = int(round(min_val + (i * interval_width)))
@@ -85,12 +85,17 @@ def captcha_solver(path):
             fff = Image.new('RGBA', rot.size, (255,)*4)
             # create a composite image using the alpha layer of rot as a mask
             out = Image.composite(rot, fff, rot)
-    
-            out.convert(img.mode).save('pic.jpg')
-            char = pytesseract.image_to_string(Image.open('pic.jpg'),
-                                               config='-c tessedit_char_whitelist=ABCDEFGHIJKLMNOPQRSTUVWXYZ -psm 10')[0].upper()   
+            tmpImg = str(i) + '.jpg';
+
+            out.convert(img.mode).save(tmpImg)
+            char = getImageText(tmpImg)       
             string += char
- 
     return(string) 
 
-print(captcha_solver(path))
+def getImageText(path):
+    return pytesseract.image_to_string(Image.open(path), config="--psm 10").upper()
+    #return pytesseract.image_to_string(Image.open(path), config='-c tessedit_char_whitelist=ABCDEFGHIJKLMNOPQRSTUVWXYZ --psm 10').upper()
+
+#print(captcha_solver(path))
+
+print(getImageText("AKBFRA.jpg"))

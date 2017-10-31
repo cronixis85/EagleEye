@@ -12,6 +12,7 @@ namespace EagleEye.Extractor.Amazon.Handlers
         {
             UseCookies = true;
             AllowAutoRedirect = false;
+            AutomaticDecompression = DecompressionMethods.GZip | DecompressionMethods.Deflate;
             CookieContainer = new CookieContainer();
         }
 
