@@ -33,6 +33,8 @@ def captcha_solver(path, threshold):
 
     if len(separators) == 5: 
 
+        ensure_dir(".tmp\\")
+
         album = {
             1: image[:,min_val:separators[0]],
             2: image[:,separators[0] + 1:separators[1]],
@@ -59,15 +61,20 @@ def captcha_solver(path, threshold):
             fff = Image.new('RGBA', rot.size, (255,) * 4)
             # create a composite image using the alpha layer of rot as a mask
             out = Image.composite(rot, fff, rot)
-
-            out.convert(img.mode).save('pic.jpg')
-            char = runTesseract(Image.open('pic.jpg'))
-
+            out.convert(img.mode).save('.tmp\\pic.jpg')
+            char = runTesseract(Image.open('.tmp\\pic.jpg'))
             string += char
+
+        string = string.replace("¥", "Y")
+
+        return string
     else: 
-        string = 'Cannot solve Captcha'
-        
-    return(string)
+        return 'Cannot solve Captcha'
 
 def runTesseract(img):
     return pytesseract.image_to_string(img, config='-c tessedit_char_whitelist=ABCDEFGHIJKLMNOPQRSTUVWXYZ -psm 10')[0].upper()
+
+def ensure_dir(file_path):
+    directory = os.path.dirname(file_path)
+    if not os.path.exists(directory):
+        os.makedirs(directory)
