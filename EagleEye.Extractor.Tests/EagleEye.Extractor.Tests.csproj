@@ -48,6 +48,9 @@
     <None Update="Amazon\Fakes\subcategoryListing.html">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
+    <None Update="Amazon\Fakes\validateCaptcha.html">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
   </ItemGroup>
 
 </Project>

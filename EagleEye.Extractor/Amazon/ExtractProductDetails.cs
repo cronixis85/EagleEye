@@ -205,7 +205,7 @@ namespace EagleEye.Extractor.Amazon
                 else
                 {
                     if (pricing.ContainsKey("Price"))
-                        sale = pricing["Price"];
+                        price = pricing["Price"];
 
                     if (pricing.ContainsKey("Sale"))
                         sale = pricing["Sale"];

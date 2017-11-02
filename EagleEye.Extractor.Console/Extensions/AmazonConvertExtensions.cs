@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 using EagleEye.Extractor.Console.Models;
 
@@ -89,7 +90,9 @@ namespace EagleEye.Extractor.Console.Extensions
                 Rating = source.Rating,
                 TotalReviews = source.TotalReviews,
                 FirstAvailableOn = source.FirstAvailableOn,
-                Errors = source.Errors
+                Errors = source.Errors,
+                Status = ProductStatus.Pending.ToString(),
+                CreatedOn = DateTime.Now
             };
 
             if (source.Rank != null)

@@ -55,31 +55,16 @@ namespace EagleEye.Extractor.Amazon
             return products;
         }
 
-        public async Task<Product> GetProductDetailAsync(Product product, CancellationToken cancellationToken)
+        public async Task<Product> GetProductDetailAsync(Uri productUri, CancellationToken cancellationToken)
         {
-            var result = await GetAsyncAsHtmlDocWithEnsureAllowed(product.Uri, cancellationToken);
+            var result = await GetAsyncAsHtmlDocWithEnsureAllowed(productUri, cancellationToken);
             var details = new ExtractProductDetails().Execute(result.HtmlDocument);
-
-            if (result.RedirectUri != null)
-                product.Url = result.RedirectUri.OriginalString;
-
-            product.Name = details.Name;
-            product.Brand = details.Brand;
-            product.CurrentPrice = details.CurrentPrice;
-            product.OriginalPrice = details.OriginalPrice;
-            product.Dimensions = details.Dimensions;
-            product.ItemWeight = details.ItemWeight;
-            product.ShippingWeight = details.ShippingWeight;
-            product.Manufacturer = details.Manufacturer;
-            product.Asin = details.Asin;
-            product.ModelNumber = details.ModelNumber;
-            product.Rating = details.Rating;
-            product.TotalReviews = details.TotalReviews;
-            product.FirstAvailableOn = details.FirstAvailableOn;
-            product.Rank = details.Rank;
-            product.Errors = details.Errors;
-
-            return product;
+            
+            details.Url = result.RedirectUri != null 
+                ? result.RedirectUri.OriginalString 
+                : productUri.OriginalString;
+            
+            return details;
         }
 
         private async Task<AmazonResponseResult> GetAsyncAsHtmlDocWithEnsureAllowed(Uri uri, CancellationToken cancellationToken)

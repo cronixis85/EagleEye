@@ -22,6 +22,8 @@ namespace EagleEye.Extractor.Console.Models
         [Column(Order = 3)]
         public string Url { get; set; }
 
+        public Uri Uri => new Uri(Url);
+
         public string Brand { get; set; }
 
         public decimal? CurrentPrice { get; set; }

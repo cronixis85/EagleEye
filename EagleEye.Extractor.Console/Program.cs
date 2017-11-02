@@ -1,4 +1,5 @@
-﻿using System.IO;
+﻿using System;
+using System.IO;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
@@ -10,6 +11,7 @@ using EagleEye.Extractor.Extensions;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Newtonsoft.Json;
 using Serilog;
 
 namespace EagleEye.Extractor.Console
@@ -59,12 +61,7 @@ namespace EagleEye.Extractor.Console
                 UpdateDepartmentalSectionsAsync(dbContext, httpClient, cts.Token).Wait(cts.Token);
                 UpdateCategoriesAsync(dbContext, httpClient, cts.Token).Wait(cts.Token);
                 UpdateProductsAsync(dbContext, httpClient, cts.Token).Wait(cts.Token);
-
-                // save categories and subcategories for sections
-                //dbContext.SaveChanges();
-
-                //var subcategories = dbContext.Subcategories.ToList();
-                //UpdateProductsAsync(dbContext, httpClient, subcategories, cts.Token).Wait(cts.Token);
+                UpdateProductsDetailsAsync(dbContext, httpClient, cts.Token).Wait(cts.Token);
             }
 
             Log.CloseAndFlush();
@@ -151,65 +148,48 @@ namespace EagleEye.Extractor.Console
             await Task.WhenAll(getProductsTasks);
         }
 
-        //private static async Task UpdateProductsDetailsAsync(ApplicationDbContext dbContext, AmazonHttpClient httpClient, CancellationToken cancellationToken)
-        //{
+        private static async Task UpdateProductsDetailsAsync(ApplicationDbContext dbContext, AmazonHttpClient httpClient, CancellationToken cancellationToken)
+        {
+            var pendingStatus = ProductStatus.Pending.ToString();
 
+            var products = dbContext.Products
+                .Where(x => x.Status == pendingStatus)
+                .ToArray();
+            
+            var getProductDetailTasks = products
+                .Select(async p =>
+                {
+                    var details = await httpClient.GetProductDetailAsync(p.Uri, cancellationToken);
 
-        //    //foreach (var s in subcategories)
-        //    //    dbContext.Entry(s).State = EntityState.Detached;
+                    p.Url = details.Url;
+                    p.Name = details.Name;
+                    p.Brand = details.Brand;
+                    p.CurrentPrice = details.CurrentPrice;
+                    p.OriginalPrice = details.OriginalPrice;
+                    p.Dimensions = details.Dimensions;
+                    p.ItemWeight = details.ItemWeight;
+                    p.ShippingWeight = details.ShippingWeight;
+                    p.Manufacturer = details.Manufacturer;
+                    p.Asin = details.Asin;
+                    p.ModelNumber = details.ModelNumber;
+                    p.Rating = details.Rating;
+                    p.TotalReviews = details.TotalReviews;
+                    p.FirstAvailableOn = details.FirstAvailableOn;
+                    p.Rank = JsonConvert.SerializeObject(details.Rank);
+                    p.Errors = details.Errors;
+                    p.UpdatedOn = DateTime.Now;
+                    p.Status = ProductStatus.Completed.ToString();
 
-        //    foreach (var s in subcategories)
-        //    {
-        //        var products = await httpClient.GetProductsAsync(s.Uri, cancellationToken);
+                    lock (_locker)
+                    {
+                        dbContext.SaveChanges();
+                    }
 
-        //        if (products == null)
-        //            continue;
+                    return p;
+                })
+                .ToArray();
 
-
-        //    }
-
-        //    var getProductTasks = subcategories
-        //        .Select(async s =>
-        //        {
-        //            var products = await httpClient.GetProductsAsync(s.Uri, cancellationToken);
-
-        //            if (products == null)
-        //                return s;
-
-        //            var getDetailTasks = products
-        //                .Select(async p =>
-        //                {
-        //                    var pd = await httpClient.GetProductDetailAsync(p, cancellationToken);
-        //                    return pd;
-        //                })
-        //                .ToArray();
-
-        //            Task.WhenAll(getDetailTasks).Wait(cancellationToken);
-
-        //            s.Products = getDetailTasks
-        //                .Select(x => x.Result)
-        //                .ToDbProducts().ToList();
-
-        //            return s;
-        //        })
-        //        .Select(x =>
-        //        {
-        //            lock (_locker)
-        //            {
-        //                var subcat = x.Result;
-
-        //                if (subcat.Products != null && subcat.Products.Count > 0)
-        //                {
-        //                    dbContext.Subcategories.Update(subcat);
-        //                    dbContext.SaveChanges();
-        //                }
-        //            }
-
-        //            return x;
-        //        })
-        //        .ToArray();
-
-        //    await Task.WhenAll(getProductTasks);
-        //}
+            await Task.WhenAll(getProductDetailTasks);
+        }
     }
 }
