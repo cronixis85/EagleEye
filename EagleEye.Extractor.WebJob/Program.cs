@@ -24,8 +24,6 @@ namespace EagleEye.Extractor.WebJob
             var host = new JobHost(config);
             // The following code ensures that the WebJob will be running continuously
             //host.RunAndBlock();
-
-            Console.WriteLine("EagleEye WebJob Started...");
         }
     }
 }
