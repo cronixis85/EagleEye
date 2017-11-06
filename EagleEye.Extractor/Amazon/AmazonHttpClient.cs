@@ -91,13 +91,20 @@ namespace EagleEye.Extractor.Amazon
                         result = await GetAsyncAsHtmlDoc(uri, cancellationToken);
                         success = true;
                     }
-                    catch (ScraperBlockedException e)
+                    catch (EncounterCaptchaException e)
                     {
                         Log.Information("{Uri}: Encounter Captcha", uri);
 
                         success = false;
                         await new SolveCaptcha(this, uri).ExecuteAsync(e.HtmlDocument, cancellationToken);
                     }
+                    catch (Exception e)
+                    {
+                        success = false;
+                        Log.Error(e.StackTrace);
+                        throw;
+                    }
+
                 } while (!success);
 
                 return result;
@@ -132,7 +139,7 @@ namespace EagleEye.Extractor.Amazon
                     var title = new ExtractTitle().Execute(result.HtmlDocument);
 
                     if (title != null && title.Contains("Robot Check"))
-                        throw new ScraperBlockedException("Amazon has blocked scraper.", result.HtmlDocument);
+                        throw new EncounterCaptchaException("Amazon has blocked scraper.", result.HtmlDocument);
 
                     return result;
                 }

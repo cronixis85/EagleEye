@@ -1,4 +1,5 @@
-﻿using System.Net;
+﻿using System;
+using System.Net;
 using System.Net.Http;
 using System.Threading;
 using System.Threading.Tasks;
@@ -7,14 +8,15 @@ namespace EagleEye.Extractor.Amazon.Handlers
 {
     public class DefaultHandler : HttpClientHandler
     {
-        private static readonly CookieContainer GlobalCookieContainer = new CookieContainer();
+        private static CookieContainer _globalCookieContainer = new CookieContainer();
+        private const int MaxRetries = 3;
 
         public DefaultHandler()
         {
             UseCookies = true;
             AllowAutoRedirect = false;
             AutomaticDecompression = DecompressionMethods.GZip | DecompressionMethods.Deflate;
-            CookieContainer = GlobalCookieContainer;
+            CookieContainer = _globalCookieContainer;
         }
 
         protected override async Task<HttpResponseMessage> SendAsync(
@@ -31,13 +33,29 @@ namespace EagleEye.Extractor.Amazon.Handlers
             request.Headers.Add("Accept-Language", "en-US,en;q=0.8");
             request.Headers.Add("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/61.0.3163.100 Safari/537.36");
 
-            var response = await base.SendAsync(request, cancellationToken);
+            HttpResponseMessage response = null;
 
-            //var cookies = CookieContainer.GetCookies(new Uri("http://www.amazon.com"));
-            //foreach (Cookie co in cookies)
-            //{
-            //    co.Expires = co.Expires.AddMinutes();
-            //}
+            for (var i = 0; i < MaxRetries; i++)
+            {
+                response = await base.SendAsync(request, cancellationToken);
+
+                if (response.StatusCode == HttpStatusCode.ServiceUnavailable)
+                {
+                    // force cookie expiry
+                    var cookies = this.CookieContainer.GetCookies(new Uri("http://www.amazon.com"));
+
+                    foreach (Cookie co in cookies)
+                    {
+                        co.Expires = DateTime.Now.Subtract(TimeSpan.FromDays(30));
+                    }
+
+                    Thread.Sleep(TimeSpan.FromMinutes(1));
+                }
+                else
+                {
+                    return response;
+                }
+            }
 
             return response;
         }

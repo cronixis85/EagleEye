@@ -72,7 +72,7 @@ namespace EagleEye.Extractor.Console
                 //UpdateCategoriesAsync(dbContext, httpClient, cts.Token).Wait(cts.Token);
                 //UpdateProductsAsync(dbContext, httpClient, cts.Token).Wait(cts.Token);
             }
-            
+
             UpdateProductsDetailsAsync(services, cts.Token).Wait(cts.Token);
 
             Log.CloseAndFlush();
@@ -173,33 +173,40 @@ namespace EagleEye.Extractor.Console
                 var getProductDetailTasks = products
                     .Select(async p =>
                     {
-                        var details = await httpClient.GetProductDetailAsync(p.Uri, cancellationToken);
-
-                        p.Url = details.Url;
-                        p.Name = details.Name;
-                        p.Brand = details.Brand;
-                        p.CurrentPrice = details.CurrentPrice;
-                        p.OriginalPrice = details.OriginalPrice;
-                        p.Dimensions = details.Dimensions;
-                        p.ItemWeight = details.ItemWeight;
-                        p.ShippingWeight = details.ShippingWeight;
-                        p.Manufacturer = details.Manufacturer;
-                        p.Asin = details.Asin;
-                        p.ModelNumber = details.ModelNumber;
-                        p.Rating = details.Rating;
-                        p.TotalReviews = details.TotalReviews;
-                        p.FirstAvailableOn = details.FirstAvailableOn;
-                        p.Rank = JsonConvert.SerializeObject(details.Rank);
-                        p.Errors = details.Errors;
-                        p.UpdatedOn = DateTime.Now;
-                        p.Status = ProductStatus.Completed.ToString();
-
-                        lock (_locker)
+                        try
                         {
-                            dbContext.SaveChanges();
-                        }
+                            var details = await httpClient.GetProductDetailAsync(p.Uri, cancellationToken);
 
-                        return p;
+                            p.Url = details.Url;
+                            p.Name = details.Name;
+                            p.Brand = details.Brand;
+                            p.CurrentPrice = details.CurrentPrice;
+                            p.OriginalPrice = details.OriginalPrice;
+                            p.Dimensions = details.Dimensions;
+                            p.ItemWeight = details.ItemWeight;
+                            p.ShippingWeight = details.ShippingWeight;
+                            p.Manufacturer = details.Manufacturer;
+                            p.Asin = details.Asin;
+                            p.ModelNumber = details.ModelNumber;
+                            p.Rating = details.Rating;
+                            p.TotalReviews = details.TotalReviews;
+                            p.FirstAvailableOn = details.FirstAvailableOn;
+                            p.Rank = JsonConvert.SerializeObject(details.Rank);
+                            p.Errors = details.Errors;
+                            p.UpdatedOn = DateTime.Now;
+                            p.Status = ProductStatus.Completed.ToString();
+
+                            lock (_locker)
+                            {
+                                dbContext.SaveChanges();
+                            }
+
+                            return p;
+                        }
+                        catch (Exception e)
+                        {
+                            throw;
+                        }
                     })
                     .ToArray();
 
