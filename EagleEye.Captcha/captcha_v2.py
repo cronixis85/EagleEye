@@ -5,6 +5,9 @@ Created on Mon Oct 30 00:25:12 2017
 @author: Xianyang
 """
 
+import sys
+import base64
+import io
 import numpy as np
 import argparse
 import cv2
@@ -13,9 +16,13 @@ from PIL import Image
 import pytesseract
 
 pytesseract.pytesseract.tesseract_cmd = 'C:\\Program Files (x86)\\Tesseract-OCR\\tesseract'
+   
+def captcha_solver(b64, threshold):
 
-def captcha_solver(path, threshold):
-    image = cv2.imread(path)
+    ensure_dir(".tmp\\")
+
+    image = convertBase64ToImage(b64)
+
     # image = cv2.resize(image, (400, 140), interpolation=cv2.INTER_CUBIC)
     image = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
     
@@ -32,8 +39,6 @@ def captcha_solver(path, threshold):
             separators.append(colmean_index[0][i])
 
     if len(separators) == 5: 
-
-        ensure_dir(".tmp\\")
 
         album = {
             1: image[:,min_val:separators[0]],
@@ -69,7 +74,12 @@ def captcha_solver(path, threshold):
 
         return string
     else: 
-        return 'Cannot solve Captcha'
+        return ""
+
+def convertBase64ToImage(b64):
+    bytes = base64.b64decode(b64)
+    nparr = np.fromstring(bytes, np.uint8)
+    return cv2.imdecode(nparr, cv2.IMREAD_COLOR)
 
 def runTesseract(img):
     return pytesseract.image_to_string(img, config='-c tessedit_char_whitelist=ABCDEFGHIJKLMNOPQRSTUVWXYZ -psm 10')[0].upper()
@@ -78,3 +88,6 @@ def ensure_dir(file_path):
     directory = os.path.dirname(file_path)
     if not os.path.exists(directory):
         os.makedirs(directory)
+
+if __name__ == '__main__':
+    print(captcha_solver(sys.argv[1], 245))

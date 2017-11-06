@@ -25,6 +25,7 @@
   <ItemGroup>
     <Compile Include="captcha_v2.py" />
     <Compile Include="EagleEye.Captcha.py" />
+    <Compile Include="helloworld.py" />
     <Compile Include="main.py" />
   </ItemGroup>
   <ItemGroup>

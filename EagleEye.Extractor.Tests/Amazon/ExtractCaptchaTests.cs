@@ -8,7 +8,7 @@ using Xunit;
 
 namespace EagleEye.Extractor.Tests.Amazon
 {
-    public class ExtractCaptchaTests : ExtractorTestBase
+    public class SolveCaptchaTests : ExtractorTestBase
     {
         [Fact]
         public void ShouldReturnFormHiddenInputsAndUrl()

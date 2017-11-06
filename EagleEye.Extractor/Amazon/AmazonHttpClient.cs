@@ -6,6 +6,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using EagleEye.Extractor.Amazon.Models;
 using EagleEye.Extractor.Extensions;
+using EagleEye.Extractor.Tesseract;
 using HtmlAgilityPack;
 using Serilog;
 
@@ -14,9 +15,11 @@ namespace EagleEye.Extractor.Amazon
     public partial class AmazonHttpClient : HttpClient
     {
         private static readonly SemaphoreSlim Semaphore = new SemaphoreSlim(6);
-
         private static readonly Uri BaseUri = new Uri("https://www.amazon.com");
         private static readonly Uri SiteDirectoryUri = new Uri("/gp/site-directory/", UriKind.Relative);
+        private static readonly Uri ValidateCaptcha = new Uri("/errors/validateCaptcha/", UriKind.Relative);
+
+        public TesseractService TesseractService { get; set; }
 
         public AmazonHttpClient() : this(new HttpClientHandler())
         {
@@ -59,13 +62,14 @@ namespace EagleEye.Extractor.Amazon
         {
             var result = await GetAsyncAsHtmlDocWithEnsureAllowed(productUri, cancellationToken);
             var details = new ExtractProductDetails().Execute(result.HtmlDocument);
-            
-            details.Url = result.RedirectUri != null 
-                ? result.RedirectUri.OriginalString 
+
+            details.Url = result.RedirectUri != null
+                ? result.RedirectUri.OriginalString
                 : productUri.OriginalString;
-            
+
             return details;
         }
+
 
         private async Task<AmazonResponseResult> GetAsyncAsHtmlDocWithEnsureAllowed(Uri uri, CancellationToken cancellationToken)
         {
@@ -81,13 +85,12 @@ namespace EagleEye.Extractor.Amazon
                     try
                     {
                         result = await GetAsyncAsHtmlDoc(uri, cancellationToken);
+                        success = true;
                     }
                     catch (ScraperBlockedException e)
                     {
                         success = false;
-
-                        Log.Information("Scrape blocked on {Url}. Retrying in 1 min.", uri.OriginalString);
-                        Thread.Sleep(TimeSpan.FromMinutes(1));
+                        await new SolveCaptcha(this).ExecuteAsync(e.HtmlDocument, cancellationToken);
                     }
                 } while (!success);
 
@@ -123,7 +126,7 @@ namespace EagleEye.Extractor.Amazon
                     var title = new ExtractTitle().Execute(result.HtmlDocument);
 
                     if (title != null && title.Contains("Robot Check"))
-                        throw new ScraperBlockedException("Amazon has blocked scraper.");
+                        throw new ScraperBlockedException("Amazon has blocked scraper.", result.HtmlDocument);
 
                     return result;
                 }
@@ -131,6 +134,10 @@ namespace EagleEye.Extractor.Amazon
                 throw new NotSupportedException();
             }
         }
+
+        private static readonly object CaptchLock = new object();
+
+        
 
         private class AmazonResponseResult
         {

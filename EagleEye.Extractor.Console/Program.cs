@@ -8,6 +8,7 @@ using EagleEye.Extractor.Amazon.Handlers;
 using EagleEye.Extractor.Console.Extensions;
 using EagleEye.Extractor.Console.Models;
 using EagleEye.Extractor.Extensions;
+using EagleEye.Extractor.Tesseract;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -41,12 +42,18 @@ namespace EagleEye.Extractor.Console
                 .AddLogging()
                 .AddDbContext<ApplicationDbContext>(options =>
                     options.UseSqlServer(Configuration.GetConnectionString("EagleEyeDb")))
+                .AddSingleton(_ => new TesseractService(
+                    Configuration["Tesseract:PythonPath"], 
+                    Configuration["Tesseract:CaptchaSolvePath"]))
                 .AddSingleton(_ =>
                 {
                     var pipeline = new DefaultHandler()
                         .DecorateWith(new LoggingHandler(Log.Logger));
 
-                    return new AmazonHttpClient(pipeline);
+                    return new AmazonHttpClient(pipeline)
+                    {
+                        TesseractService = _.GetService<TesseractService>()
+                    };
                 })
                 .BuildServiceProvider();
 
