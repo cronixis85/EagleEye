@@ -19,7 +19,7 @@ namespace EagleEye.Extractor.Console
 {
     internal class Program
     {
-        private static readonly object _locker = new object();
+        private static readonly object Locker = new object();
 
         private static IConfigurationRoot Configuration { get; set; }
 
@@ -43,6 +43,14 @@ namespace EagleEye.Extractor.Console
                 .AddDbContext<ApplicationDbContext>(options =>
                         options.UseSqlServer(Configuration.GetConnectionString("EagleEyeDb")),
                     ServiceLifetime.Transient)
+                .AddSingleton(_ => new ScrapeSettings
+                {
+                    RebuildDatabase = Convert.ToBoolean(Configuration["ScrapeSettings:RebuildDatabase"]),
+                    UpdateDepartments = Convert.ToBoolean(Configuration["ScrapeSettings:UpdateDepartments"]),
+                    UpdateCategories = Convert.ToBoolean(Configuration["ScrapeSettings:UpdateCategories"]),
+                    UpdateProducts = Convert.ToBoolean(Configuration["ScrapeSettings:UpdateProducts"]),
+                    UpdateProductDetails = Convert.ToBoolean(Configuration["ScrapeSettings:UpdateProductDetails"])
+                })
                 .AddSingleton(_ => new TesseractService(
                     Configuration["Tesseract:PythonPath"],
                     Configuration["Tesseract:CaptchaSolvePath"]))
@@ -58,108 +66,129 @@ namespace EagleEye.Extractor.Console
                 })
                 .BuildServiceProvider();
 
+            var settings = services.GetService<ScrapeSettings>();
             var cts = new CancellationTokenSource();
 
-            using (var dbContext = services.GetService<ApplicationDbContext>())
-            using (var httpClient = services.GetService<AmazonHttpClient>())
-            {
-                //dbContext.Database.EnsureDeleted();
-                //dbContext.Database.EnsureCreated();
+            if (settings.RebuildDatabase)
+                RebuildDatabase(services);
 
-                //var cts = new CancellationTokenSource();
+            if (settings.UpdateDepartments)
+                UpdateDepartmentalSectionsAsync(services, cts.Token).Wait(cts.Token);
 
-                //UpdateDepartmentalSectionsAsync(dbContext, httpClient, cts.Token).Wait(cts.Token);
-                //UpdateCategoriesAsync(dbContext, httpClient, cts.Token).Wait(cts.Token);
-                //UpdateProductsAsync(dbContext, httpClient, cts.Token).Wait(cts.Token);
-            }
+            if (settings.UpdateCategories)
+                UpdateCategoriesAsync(services, cts.Token).Wait(cts.Token);
 
-            UpdateProductsDetailsAsync(services, cts.Token).Wait(cts.Token);
+            if (settings.UpdateProducts)
+                UpdateProductsAsync(services, cts.Token).Wait(cts.Token);
+
+            if (settings.UpdateProductDetails)
+                UpdateProductsDetailsAsync(services, cts.Token).Wait(cts.Token);
 
             Log.CloseAndFlush();
         }
 
-        private static async Task UpdateDepartmentalSectionsAsync(ApplicationDbContext dbContext, AmazonHttpClient httpClient, CancellationToken cancellationToken)
+        private static void RebuildDatabase(IServiceProvider services)
         {
-            Log.Information("Getting Departments and Sections");
-
-            var amzDepartments = await httpClient.GetDepartmentalSectionsAsync(cancellationToken);
-
-            var depts = amzDepartments.ToDbDepartments().ToList();
-
-            // save department, sections
-            dbContext.Departments.AddRange(depts);
-            dbContext.SaveChanges();
+            using (var dbContext = services.GetService<ApplicationDbContext>())
+            {
+                dbContext.Database.EnsureDeleted();
+                dbContext.Database.EnsureCreated();
+            }
         }
 
-        private static async Task UpdateCategoriesAsync(ApplicationDbContext dbContext, AmazonHttpClient httpClient, CancellationToken cancellationToken)
+        private static async Task UpdateDepartmentalSectionsAsync(IServiceProvider services, CancellationToken cancellationToken)
         {
-            Log.Information("Updating Categories");
+            using (var dbContext = services.GetService<ApplicationDbContext>())
+            using (var httpClient = services.GetService<AmazonHttpClient>())
+            {
+                Log.Information("Getting Departments and Sections");
 
-            var sections = dbContext.Sections
-                                    .Where(x => x.Enabled)
-                                    .Where(x => x.Name == "Kitchen & Dining")
-                                    .ToList();
+                var amzDepartments = await httpClient.GetDepartmentalSectionsAsync(cancellationToken);
 
-            var getSubCategoryTasks = sections
-                .Select(async x =>
-                {
-                    var amzCategories = await httpClient.GetCategoriesAsync(x.Uri, cancellationToken);
+                var depts = amzDepartments.ToDbDepartments().ToList();
 
-                    if (amzCategories != null && amzCategories.Count > 0)
-                    {
-                        x.Categories = amzCategories.ToDbCategories().ToList();
-                        x.Enabled = true;
-                    }
-                    else
-                    {
-                        x.Enabled = false;
-                    }
-
-                    return x;
-                })
-                .ToArray();
-
-            await Task.WhenAll(getSubCategoryTasks);
-
-            dbContext.SaveChanges();
+                // save department, sections
+                dbContext.Departments.AddRange(depts);
+                dbContext.SaveChanges();
+            }
         }
 
-        private static async Task UpdateProductsAsync(ApplicationDbContext dbContext, AmazonHttpClient httpClient, CancellationToken cancellationToken)
+        private static async Task UpdateCategoriesAsync(IServiceProvider services, CancellationToken cancellationToken)
         {
-            Log.Information("Updating Products");
+            using (var dbContext = services.GetService<ApplicationDbContext>())
+            using (var httpClient = services.GetService<AmazonHttpClient>())
+            {
+                Log.Information("Updating Categories");
 
-            var subcategories = dbContext.Subcategories
-                                         .Where(x => x.Enabled)
-                                         .ToList();
+                var sections = dbContext.Sections
+                                        .Where(x => x.Enabled)
+                                        .ToList();
 
-            var getProductsTasks = subcategories
-                .Select(async x =>
-                {
-                    var amzProducts = await httpClient.GetProductsAsync(x.Uri, cancellationToken);
-
-                    if (amzProducts != null && amzProducts.Count > 0)
+                var getSubCategoryTasks = sections
+                    .Select(async x =>
                     {
-                        x.Products = amzProducts.ToDbProducts().ToList();
-                        x.Enabled = true;
-                    }
-                    else
-                    {
-                        x.Enabled = false;
-                    }
+                        var amzCategories = await httpClient.GetCategoriesAsync(x.Uri, cancellationToken);
 
-                    lock (_locker)
-                    {
-                        dbContext.SaveChanges();
-                    }
+                        if (amzCategories != null && amzCategories.Count > 0)
+                        {
+                            x.Categories = amzCategories.ToDbCategories().ToList();
+                            x.Enabled = true;
+                        }
+                        else
+                        {
+                            x.Enabled = false;
+                        }
 
-                    return x;
-                })
-                .ToArray();
+                        return x;
+                    })
+                    .ToArray();
 
-            await Task.WhenAll(getProductsTasks);
+                await Task.WhenAll(getSubCategoryTasks);
+
+                dbContext.SaveChanges();
+            }
         }
 
-        private static async Task UpdateProductsDetailsAsync(ServiceProvider services, CancellationToken cancellationToken)
+        private static async Task UpdateProductsAsync(IServiceProvider services, CancellationToken cancellationToken)
+        {
+            using (var dbContext = services.GetService<ApplicationDbContext>())
+            using (var httpClient = services.GetService<AmazonHttpClient>())
+            {
+                Log.Information("Updating Products");
+
+                var subcategories = dbContext.Subcategories
+                                             .Where(x => x.Enabled)
+                                             .ToList();
+
+                var getProductsTasks = subcategories
+                    .Select(async x =>
+                    {
+                        var amzProducts = await httpClient.GetProductsAsync(x.Uri, cancellationToken);
+
+                        if (amzProducts != null && amzProducts.Count > 0)
+                        {
+                            x.Products = amzProducts.ToDbProducts().ToList();
+                            x.Enabled = true;
+                        }
+                        else
+                        {
+                            x.Enabled = false;
+                        }
+
+                        lock (Locker)
+                        {
+                            dbContext.SaveChanges();
+                        }
+
+                        return x;
+                    })
+                    .ToArray();
+
+                await Task.WhenAll(getProductsTasks);
+            }
+        }
+
+        private static async Task UpdateProductsDetailsAsync(IServiceProvider services, CancellationToken cancellationToken)
         {
             using (var dbContext = services.GetService<ApplicationDbContext>())
             using (var httpClient = services.GetService<AmazonHttpClient>())
@@ -195,18 +224,18 @@ namespace EagleEye.Extractor.Console
                             p.Errors = details.Errors;
                             p.UpdatedOn = DateTime.Now;
                             p.Status = ProductStatus.Completed.ToString();
-
-                            lock (_locker)
-                            {
-                                dbContext.SaveChanges();
-                            }
-
-                            return p;
                         }
                         catch (Exception e)
                         {
-                            throw;
+                            p.Errors = e.Message + e.StackTrace;
                         }
+
+                        lock (Locker)
+                        {
+                            dbContext.SaveChanges();
+                        }
+
+                        return p;
                     })
                     .ToArray();
 
