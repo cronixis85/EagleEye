@@ -17,7 +17,7 @@ namespace EagleEye.Extractor.Amazon
         private static readonly SemaphoreSlim Semaphore = new SemaphoreSlim(6);
         private static readonly Uri BaseUri = new Uri("https://www.amazon.com");
         private static readonly Uri SiteDirectoryUri = new Uri("/gp/site-directory/", UriKind.Relative);
-        private static readonly Uri ValidateCaptcha = new Uri("/errors/validateCaptcha/", UriKind.Relative);
+        private static readonly Uri ValidateCaptcha = new Uri("/errors/validateCaptcha", UriKind.Relative);
 
         public TesseractService TesseractService { get; set; }
 
@@ -60,12 +60,16 @@ namespace EagleEye.Extractor.Amazon
 
         public async Task<Product> GetProductDetailAsync(Uri productUri, CancellationToken cancellationToken)
         {
+            Log.Information("{Uri}: Retrieving", productUri);
+
             var result = await GetAsyncAsHtmlDocWithEnsureAllowed(productUri, cancellationToken);
             var details = new ExtractProductDetails().Execute(result.HtmlDocument);
 
             details.Url = result.RedirectUri != null
                 ? result.RedirectUri.OriginalString
                 : productUri.OriginalString;
+
+            Log.Information("{Uri}: Completed", productUri);
 
             return details;
         }
@@ -89,8 +93,10 @@ namespace EagleEye.Extractor.Amazon
                     }
                     catch (ScraperBlockedException e)
                     {
+                        Log.Information("{Uri}: Encounter Captcha", uri);
+
                         success = false;
-                        await new SolveCaptcha(this).ExecuteAsync(e.HtmlDocument, cancellationToken);
+                        await new SolveCaptcha(this, uri).ExecuteAsync(e.HtmlDocument, cancellationToken);
                     }
                 } while (!success);
 

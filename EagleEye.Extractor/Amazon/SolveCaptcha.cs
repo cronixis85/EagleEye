@@ -2,8 +2,10 @@
 using System.Threading;
 using System.Threading.Tasks;
 using System.Web;
+using EagleEye.Extractor.Amazon.Models;
 using EagleEye.Extractor.Extensions;
 using HtmlAgilityPack;
+using Serilog;
 
 namespace EagleEye.Extractor.Amazon
 {
@@ -12,43 +14,61 @@ namespace EagleEye.Extractor.Amazon
         public class SolveCaptcha
         {
             private readonly AmazonHttpClient _httpClient;
+            private readonly Uri _uriForLogging;
 
-            public SolveCaptcha(AmazonHttpClient httpClient)
+            public SolveCaptcha(AmazonHttpClient httpClient, Uri uriForLogging)
             {
                 _httpClient = httpClient;
+                _uriForLogging = uriForLogging;
             }
 
             public async Task ExecuteAsync(HtmlDocument doc, CancellationToken cancellationToken)
             {
-                SolveCaptchaResult result = null;
-                var captchaPage = doc;
+                var solveResult = new SolveCaptchaResult
+                {
+                    Success = false,
+                    NextCaptchaPage = doc
+                };
 
                 do
                 {
-                    result = await SolveCaptchaPageAsync(captchaPage, cancellationToken);
+                    // extract
+                    var extractResult = await SolveCaptchaPageAsync(solveResult.NextCaptchaPage, cancellationToken);
 
-                    if (!result.Success)
-                        captchaPage = result.NextCaptchaPage;
+                    // solve captcha with OCR
+                    var answer = _httpClient.TesseractService.Run(extractResult.CaptchaBase64);
 
-                } while (!result.Success);
+                    if (string.IsNullOrEmpty(answer) || answer.Length < 6)
+                        solveResult.NextCaptchaPage = await GetNewCaptchaPageAsync(cancellationToken);
+                    else
+                        solveResult = await SubmitCaptchaAnswerAsync(answer, extractResult.HiddenInputs["amzn"], cancellationToken);
+
+                } while (!solveResult.Success);
             }
 
-            private async Task<SolveCaptchaResult> SolveCaptchaPageAsync(HtmlDocument captchaPage, CancellationToken cancellationToken)
+            private async Task<ValidateCaptchaResult> SolveCaptchaPageAsync(HtmlDocument captchaPage, CancellationToken cancellationToken)
             {
                 // get captcha image
-                var captchaResult = new ExtractCaptcha().ExecuteCore(captchaPage);
-                captchaResult.CaptchaBase64 = await GetImageBase64Async(captchaResult.CaptchaImageUri, cancellationToken);
+                var result = new ExtractCaptcha().ExecuteCore(captchaPage);
+                result.CaptchaBase64 = await GetImageBase64Async(result.CaptchaImageUri, cancellationToken);
+                return result;
+            }
 
-                // solve captcha
-                var answer = _httpClient.TesseractService.Run(captchaResult.CaptchaBase64);
+            private async Task<HtmlDocument> GetNewCaptchaPageAsync(CancellationToken cancellationToken)
+            {
+                using (var response = await _httpClient.GetAsync(ValidateCaptcha, cancellationToken))
+                {
+                    var doc = await response.Content.ReadAsHtmlDocumentAsync();
+                    return doc;
+                }
+            }
 
-                // submit answer
+            private async Task<SolveCaptchaResult> SubmitCaptchaAnswerAsync(string captcha, string amzn, CancellationToken cancellationToken)
+            {
                 var query = HttpUtility.ParseQueryString(string.Empty);
-
-                foreach (var input in captchaResult.HiddenInputs)
-                    query[input.Key] = input.Value;
-
-                query["field-keywords"] = answer;
+                query["amzn"] = amzn;
+                query["amzn-r"] = "%2F";
+                query["field-keywords"] = captcha;
 
                 using (var response = await _httpClient.GetAsync(ValidateCaptcha + "?" + query, cancellationToken))
                 {
@@ -58,13 +78,19 @@ namespace EagleEye.Extractor.Amazon
                     var title = new ExtractTitle().Execute(doc);
 
                     if (title != null && title.Contains("Robot Check"))
-                        return new SolveCaptchaResult()
+                    {
+                        Log.Information("{Uri}: Solve Captcha Failed", _uriForLogging);
+
+                        return new SolveCaptchaResult
                         {
                             Success = false,
                             NextCaptchaPage = doc
                         };
+                    }
 
-                    return new SolveCaptchaResult()
+                    Log.Information("{Uri}: Solve Captcha Success", _uriForLogging);
+
+                    return new SolveCaptchaResult
                     {
                         Success = true
                     };

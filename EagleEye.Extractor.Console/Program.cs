@@ -41,11 +41,12 @@ namespace EagleEye.Extractor.Console
             var services = new ServiceCollection()
                 .AddLogging()
                 .AddDbContext<ApplicationDbContext>(options =>
-                    options.UseSqlServer(Configuration.GetConnectionString("EagleEyeDb")))
+                        options.UseSqlServer(Configuration.GetConnectionString("EagleEyeDb")),
+                    ServiceLifetime.Transient)
                 .AddSingleton(_ => new TesseractService(
-                    Configuration["Tesseract:PythonPath"], 
+                    Configuration["Tesseract:PythonPath"],
                     Configuration["Tesseract:CaptchaSolvePath"]))
-                .AddSingleton(_ =>
+                .AddTransient(_ =>
                 {
                     var pipeline = new DefaultHandler()
                         .DecorateWith(new LoggingHandler(Log.Logger));
@@ -60,16 +61,18 @@ namespace EagleEye.Extractor.Console
             using (var dbContext = services.GetService<ApplicationDbContext>())
             using (var httpClient = services.GetService<AmazonHttpClient>())
             {
-                dbContext.Database.EnsureDeleted();
-                dbContext.Database.EnsureCreated();
+                //dbContext.Database.EnsureDeleted();
+                //dbContext.Database.EnsureCreated();
 
-                var cts = new CancellationTokenSource();
+                //var cts = new CancellationTokenSource();
 
-                UpdateDepartmentalSectionsAsync(dbContext, httpClient, cts.Token).Wait(cts.Token);
-                UpdateCategoriesAsync(dbContext, httpClient, cts.Token).Wait(cts.Token);
-                UpdateProductsAsync(dbContext, httpClient, cts.Token).Wait(cts.Token);
-                UpdateProductsDetailsAsync(dbContext, httpClient, cts.Token).Wait(cts.Token);
+                //UpdateDepartmentalSectionsAsync(dbContext, httpClient, cts.Token).Wait(cts.Token);
+                //UpdateCategoriesAsync(dbContext, httpClient, cts.Token).Wait(cts.Token);
+                //UpdateProductsAsync(dbContext, httpClient, cts.Token).Wait(cts.Token);
             }
+
+            var cts = new CancellationTokenSource();
+            UpdateProductsDetailsAsync(services, cts.Token).Wait(cts.Token);
 
             Log.CloseAndFlush();
         }
@@ -155,48 +158,52 @@ namespace EagleEye.Extractor.Console
             await Task.WhenAll(getProductsTasks);
         }
 
-        private static async Task UpdateProductsDetailsAsync(ApplicationDbContext dbContext, AmazonHttpClient httpClient, CancellationToken cancellationToken)
+        private static async Task UpdateProductsDetailsAsync(ServiceProvider services, CancellationToken cancellationToken)
         {
-            var pendingStatus = ProductStatus.Pending.ToString();
+            using (var dbContext = services.GetService<ApplicationDbContext>())
+            using (var httpClient = services.GetService<AmazonHttpClient>())
+            {
+                var pendingStatus = ProductStatus.Pending.ToString();
 
-            var products = dbContext.Products
-                .Where(x => x.Status == pendingStatus)
-                .ToArray();
-            
-            var getProductDetailTasks = products
-                .Select(async p =>
-                {
-                    var details = await httpClient.GetProductDetailAsync(p.Uri, cancellationToken);
+                var products = dbContext.Products
+                                        .Where(x => x.Status == pendingStatus)
+                                        .ToArray();
 
-                    p.Url = details.Url;
-                    p.Name = details.Name;
-                    p.Brand = details.Brand;
-                    p.CurrentPrice = details.CurrentPrice;
-                    p.OriginalPrice = details.OriginalPrice;
-                    p.Dimensions = details.Dimensions;
-                    p.ItemWeight = details.ItemWeight;
-                    p.ShippingWeight = details.ShippingWeight;
-                    p.Manufacturer = details.Manufacturer;
-                    p.Asin = details.Asin;
-                    p.ModelNumber = details.ModelNumber;
-                    p.Rating = details.Rating;
-                    p.TotalReviews = details.TotalReviews;
-                    p.FirstAvailableOn = details.FirstAvailableOn;
-                    p.Rank = JsonConvert.SerializeObject(details.Rank);
-                    p.Errors = details.Errors;
-                    p.UpdatedOn = DateTime.Now;
-                    p.Status = ProductStatus.Completed.ToString();
-
-                    lock (_locker)
+                var getProductDetailTasks = products
+                    .Select(async p =>
                     {
-                        dbContext.SaveChanges();
-                    }
+                        var details = await httpClient.GetProductDetailAsync(p.Uri, cancellationToken);
 
-                    return p;
-                })
-                .ToArray();
+                        p.Url = details.Url;
+                        p.Name = details.Name;
+                        p.Brand = details.Brand;
+                        p.CurrentPrice = details.CurrentPrice;
+                        p.OriginalPrice = details.OriginalPrice;
+                        p.Dimensions = details.Dimensions;
+                        p.ItemWeight = details.ItemWeight;
+                        p.ShippingWeight = details.ShippingWeight;
+                        p.Manufacturer = details.Manufacturer;
+                        p.Asin = details.Asin;
+                        p.ModelNumber = details.ModelNumber;
+                        p.Rating = details.Rating;
+                        p.TotalReviews = details.TotalReviews;
+                        p.FirstAvailableOn = details.FirstAvailableOn;
+                        p.Rank = JsonConvert.SerializeObject(details.Rank);
+                        p.Errors = details.Errors;
+                        p.UpdatedOn = DateTime.Now;
+                        p.Status = ProductStatus.Completed.ToString();
 
-            await Task.WhenAll(getProductDetailTasks);
+                        lock (_locker)
+                        {
+                            dbContext.SaveChanges();
+                        }
+
+                        return p;
+                    })
+                    .ToArray();
+
+                await Task.WhenAll(getProductDetailTasks);
+            }
         }
     }
 }
