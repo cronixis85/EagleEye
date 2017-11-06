@@ -1,5 +1,4 @@
-﻿using System;
-using System.Net;
+﻿using System.Net;
 using System.Net.Http;
 using System.Threading;
 using System.Threading.Tasks;
@@ -8,12 +7,14 @@ namespace EagleEye.Extractor.Amazon.Handlers
 {
     public class DefaultHandler : HttpClientHandler
     {
+        private static readonly CookieContainer GlobalCookieContainer = new CookieContainer();
+
         public DefaultHandler()
         {
             UseCookies = true;
             AllowAutoRedirect = false;
             AutomaticDecompression = DecompressionMethods.GZip | DecompressionMethods.Deflate;
-            CookieContainer = new CookieContainer();
+            CookieContainer = GlobalCookieContainer;
         }
 
         protected override async Task<HttpResponseMessage> SendAsync(

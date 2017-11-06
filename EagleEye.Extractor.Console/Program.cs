@@ -58,6 +58,8 @@ namespace EagleEye.Extractor.Console
                 })
                 .BuildServiceProvider();
 
+            var cts = new CancellationTokenSource();
+
             using (var dbContext = services.GetService<ApplicationDbContext>())
             using (var httpClient = services.GetService<AmazonHttpClient>())
             {
@@ -70,8 +72,7 @@ namespace EagleEye.Extractor.Console
                 //UpdateCategoriesAsync(dbContext, httpClient, cts.Token).Wait(cts.Token);
                 //UpdateProductsAsync(dbContext, httpClient, cts.Token).Wait(cts.Token);
             }
-
-            var cts = new CancellationTokenSource();
+            
             UpdateProductsDetailsAsync(services, cts.Token).Wait(cts.Token);
 
             Log.CloseAndFlush();
