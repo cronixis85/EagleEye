@@ -56,11 +56,11 @@
     <Content Include="readme.md" />
   </ItemGroup>
   <ItemGroup>
-    <InterpreterReference Include="Global|ContinuumAnalytics|Anaconda36-64" />
+    <Folder Include="images\" />
+    <Folder Include="images\" />
   </ItemGroup>
   <ItemGroup>
-    <Folder Include="images\" />
-    <Folder Include="images\" />
+    <InterpreterReference Include="Global|ContinuumAnalytics|Anaconda36-64" />
   </ItemGroup>
   <Import Project="$(MSBuildExtensionsPath32)\Microsoft\VisualStudio\v$(VisualStudioVersion)\Python Tools\Microsoft.PythonTools.targets" />
   <!-- Uncomment the CoreCompile target to enable the Build command in
