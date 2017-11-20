@@ -8,30 +8,30 @@ namespace EagleEye.Captcha.Net.Console
     {
         private static void Main(string[] args)
         {
-            //SolveImage("ACYKRB");
-            //SolveImage("AKBFRA");
+            SolveImage("ACYKRB");
+            SolveImage("AKBFRA");
             SolveImage("BPKURG");
-            //SolveImage("CBTRUR");
-            //SolveImage("CKFEBX");
-            //SolveImage("CLMFFE");
-            //SolveImage("CRYNRM");
-            //SolveImage("EAAMGR");
-            //SolveImage("HERYME");
-            //SolveImage("HLGGNU");
-            //SolveImage("JPUYJP");
-            //SolveImage("JRMBJG");
-            //SolveImage("JTNLHN");
-            //SolveImage("KHNRFG");
-            //SolveImage("LEAMXK");
-            //SolveImage("LYGJHY");
-            //SolveImage("MXJAAG");
-            //SolveImage("NNPPHP");
-            //SolveImage("NTJLBM");
-            //SolveImage("PUFTXE");
-            //SolveImage("PXCACE");
-            //SolveImage("TEERXM");
-            //SolveImage("XNKHFY");
-            //SolveImage("YMEPAX");
+            SolveImage("CBTRUR");
+            SolveImage("CKFEBX");
+            SolveImage("CLMFFE");
+            SolveImage("CRYNRM");
+            SolveImage("EAAMGR");
+            SolveImage("HERYME");
+            SolveImage("HLGGNU");
+            SolveImage("JPUYJP");
+            SolveImage("JRMBJG");
+            SolveImage("JTNLHN");
+            SolveImage("KHNRFG");
+            SolveImage("LEAMXK");
+            SolveImage("LYGJHY");
+            SolveImage("MXJAAG");
+            SolveImage("NNPPHP");
+            SolveImage("NTJLBM");
+            SolveImage("PUFTXE");
+            SolveImage("PXCACE");
+            SolveImage("TEERXM");
+            SolveImage("XNKHFY");
+            SolveImage("YMEPAX");
         }
 
         private static void SolveImage(string name)

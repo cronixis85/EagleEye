@@ -52,7 +52,8 @@ namespace EagleEye.Captcha.Net
 
         private void SetGrayScale(SKSurface surface, SKBitmap bitmap)
         {
-            using (var cf = SKColorFilter.CreateHighContrast(true, SKHighContrastConfigInvertStyle.NoInvert, 1.0f))
+            // do not grayscale too much so that image can be split easily
+            using (var cf = SKColorFilter.CreateHighContrast(true, SKHighContrastConfigInvertStyle.NoInvert, 0.5f))
             using (var paint = new SKPaint())
             {
                 paint.ColorFilter = cf;
@@ -63,7 +64,7 @@ namespace EagleEye.Captcha.Net
             }
         }
 
-        private List<SKImage> SplitImageByCharacters(SKSurface surface, int threshold = 245)
+        private List<SKImage> SplitImageByCharacters(SKSurface surface, int threshold = 243)
         {
             var image = surface.Snapshot();
 
@@ -162,27 +163,38 @@ namespace EagleEye.Captcha.Net
                 var img = images[i];
 
                 using (var surface = SKSurface.Create(img.Width + 20, img.Height + 20, SKImageInfo.PlatformColorType, SKAlphaType.Premul))
+                //using (var cf = SKColorFilter.CreateHighContrast(true, SKHighContrastConfigInvertStyle.NoInvert, 1.0f))
+                //using (var paint = new SKPaint())
                 {
+                    //paint.IsAntialias = true;
+                    //paint.ColorFilter = cf;
+
                     var canvas = surface.Canvas;
                     canvas.Clear(SKColors.White);
 
                     switch (i)
                     {
+                        case 0:
+                            canvas.RotateDegrees(-12, img.Width / 2f + 50, img.Height / 2f);
+                            break;
                         case 1:
-                            canvas.RotateDegrees(20, img.Width / 2f, img.Height / 2f + 20);
+                            canvas.RotateDegrees(15, img.Width / 2f, img.Height / 2f + 20);
                             break;
                         case 2:
-                            canvas.RotateDegrees(-15, img.Width / 2f + 30, img.Height / 2f - 10);
+                            canvas.RotateDegrees(-20, img.Width / 2f + 50, img.Height / 2f - 10);
                             break;
                         case 3:
-                            canvas.RotateDegrees(15, img.Width / 2f, img.Height / 2f);
+                            canvas.RotateDegrees(13, img.Width / 2f, img.Height / 2f);
+                            break;
+                        case 4:
+                            canvas.RotateDegrees(-7, img.Width / 2f, img.Height / 2f);
                             break;
                         case 5:
                             canvas.RotateDegrees(15, img.Width / 2f, img.Height / 2f);
                             break;
                     }
-
-                    canvas.DrawImage(img, SKRect.Create(img.Width, img.Height));
+                    
+                    canvas.DrawImage(img, 10, 0);
 
                     rotated.Add(surface.Snapshot());
                 }
