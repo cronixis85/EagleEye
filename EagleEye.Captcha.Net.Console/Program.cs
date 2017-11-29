@@ -1,6 +1,5 @@
 ﻿using System;
 using System.IO;
-using SkiaSharp;
 
 namespace EagleEye.Captcha.Net.Console
 {
@@ -8,30 +7,33 @@ namespace EagleEye.Captcha.Net.Console
     {
         private static void Main(string[] args)
         {
-            SolveImage("ACYKRB");
-            SolveImage("AKBFRA");
-            SolveImage("BPKURG");
-            SolveImage("CBTRUR");
-            SolveImage("CKFEBX");
-            SolveImage("CLMFFE");
-            SolveImage("CRYNRM");
-            SolveImage("EAAMGR");
-            SolveImage("HERYME");
-            SolveImage("HLGGNU");
-            SolveImage("JPUYJP");
-            SolveImage("JRMBJG");
-            SolveImage("JTNLHN");
-            SolveImage("KHNRFG");
-            SolveImage("LEAMXK");
-            SolveImage("LYGJHY");
-            SolveImage("MXJAAG");
-            SolveImage("NNPPHP");
-            SolveImage("NTJLBM");
-            SolveImage("PUFTXE");
-            SolveImage("PXCACE");
-            SolveImage("TEERXM");
-            SolveImage("XNKHFY");
-            SolveImage("YMEPAX");
+            //SolveImageWithOpenCV("ACYKRB");
+
+            //SolveImage("ACYKRB");
+            //SolveImage("AKBFRA");
+            //SolveImage("BPKURG");
+            //SolveImage("CBTRUR");
+            //SolveImage("CKFEBX");
+            //SolveImage("CLMFFE");
+            //SolveImage("CRYNRM");
+
+            //SolveImage("EAAMGR");
+            //SolveImage("HERYME");
+            //SolveImage("HLGGNU");
+            //SolveImage("JPUYJP");
+            //SolveImage("JRMBJG");
+            //SolveImage("JTNLHN");
+            //SolveImage("KHNRFG");
+            //SolveImage("LEAMXK");
+            //SolveImage("LYGJHY");
+            //SolveImage("MXJAAG");
+            //SolveImage("NNPPHP");
+            //SolveImage("NTJLBM");
+            //SolveImage("PUFTXE");
+            //SolveImage("PXCACE");
+            //SolveImage("TEERXM");
+            //SolveImage("XNKHFY");
+            //SolveImage("YMEPAX");
         }
 
         private static void SolveImage(string name)
@@ -42,6 +44,13 @@ namespace EagleEye.Captcha.Net.Console
                 var captchaText = new TesseractService(@"C:\Program Files (x86)\Tesseract-OCR\tesseract.exe").RunAsync(byteImages).Result;
                 System.Console.WriteLine($"{name} == {captchaText} --> {name == captchaText}");
             }
+        }
+
+        private static void SolveImageWithOpenCV(string name)
+        {
+            var byteImages = new SplitCaptchaWithOpenCV().Execute($@"images\{name}.jpg");
+            //var captchaText = new TesseractService(@"C:\Program Files (x86)\Tesseract-OCR\tesseract.exe").RunAsync(byteImages).Result;
+            //System.Console.WriteLine($"{name} == {captchaText} --> {name == captchaText}");
         }
 
         private static string ReadFileAsBase64(string filePath)

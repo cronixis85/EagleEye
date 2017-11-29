@@ -3,51 +3,43 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using OpenCvSharp;
 using SkiaSharp;
 
 namespace EagleEye.Captcha.Net
 {
-    public class SplitCaptcha
+    public class SplitCaptchaWithOpenCV
     {
         private static int EncodeQuality = 80;
 
-        public SplitCaptcha()
+        private static readonly string TempDir = ".tmp";
+
+        public SplitCaptchaWithOpenCV()
         {
-            EnsureDirectoryExist(".tmp");
+            EnsureDirectoryExist(TempDir);
         }
 
-        public byte[][] Execute(Stream ms)
+        public byte[][] Execute(string filePath)
         {
-            using (var inputStream = new SKManagedStream(ms))
-            using (var bitmap = SKBitmap.Decode(inputStream))
-            {
-                var width = bitmap.Width;
-                var height = bitmap.Height;
+            var img = new Mat(filePath, ImreadModes.Color);
+            
+            //var imgGrayScale = new Mat();
 
-                using (var surface = SKSurface.Create(width, height, SKImageInfo.PlatformColorType, SKAlphaType.Premul))
-                {
-                    SetGrayScale(surface, bitmap);
+            Cv2.CvtColor(img, img, ColorConversionCodes.BGR2GRAY);
+            //img.SaveImage(Path.Combine(TempDir, "grayscale.jpg"));
 
-                    if (Debugger.IsAttached)
-                        WriteImageToFile(surface.Snapshot(), "grayscale");
+            
 
-                    var images = SplitImageByCharacters(surface);
+            var colmean = img.Sum();
+            //Bitmap s = new Bitmap();
+            //Image<Bgr, byte> image = new Image<Bgr, byte>("sample.png");
 
-                    if (Debugger.IsAttached)
-                        for (var i = 0; i < images.Count; i++)
-                            WriteImageToFile(images[i], "debug_" + i);
+            //throw new NotImplementedException();
+            //var colmean_index = np.where(colmean < threshold)
+            //var min_val = np.min(colmean_index)
+            //var max_val = np.max(colmean_index)
 
-                    images = AutoRotateImage(images);
-
-                    if (Debugger.IsAttached)
-                        for (var i = 0; i < images.Count; i++)
-                            WriteImageToFile(images[i], "rotated_" + i);
-
-                    var imageBytes = images.Select(x => x.Encode(SKEncodedImageFormat.Jpeg, EncodeQuality).ToArray()).ToArray();
-
-                    return imageBytes;
-                }
-            }
+            return null;
         }
 
         private void SetGrayScale(SKSurface surface, SKBitmap bitmap)
