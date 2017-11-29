@@ -6,13 +6,13 @@ using System.Threading.Tasks;
 
 namespace EagleEye.Captcha.Net
 {
-    public class TesseractService
+    public class DotNetTesseractService
     {
         private const string Config = @"stdout -c tessedit_char_whitelist=ABCDEFGHIJKLMNOPQRSTUVWXYZ -psm 7";
         private const string TempDir = ".tmp";
         private readonly string _tesseractPath;
 
-        public TesseractService(string tesseractPath)
+        public DotNetTesseractService(string tesseractPath)
         {
             _tesseractPath = tesseractPath;
             EnsureDirectoryExist(TempDir);

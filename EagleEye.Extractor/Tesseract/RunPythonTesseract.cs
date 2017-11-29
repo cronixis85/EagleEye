@@ -4,18 +4,18 @@ using System.IO;
 
 namespace EagleEye.Extractor.Tesseract
 {
-    public class TesseractService
+    public class RunPythonTesseract
     {
         private readonly string _pythonPath;
         private readonly string _captchaSolvePath;
 
-        public TesseractService(string pythonPath, string captchaSolvePath)
+        public RunPythonTesseract(string pythonPath, string captchaSolvePath)
         {
             _pythonPath = pythonPath;
             _captchaSolvePath = captchaSolvePath;
         }
 
-        public string Run(string base64)
+        public string Execute(string base64)
         {
             var startInfo = new ProcessStartInfo();
             startInfo.FileName = _pythonPath;

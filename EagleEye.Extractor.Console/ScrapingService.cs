@@ -51,9 +51,9 @@ namespace EagleEye.Extractor.Console
                     UpdateProducts = Convert.ToBoolean(Configuration["ScrapeSettings:UpdateProducts"]),
                     UpdateProductDetails = Convert.ToBoolean(Configuration["ScrapeSettings:UpdateProductDetails"])
                 })
-                .AddSingleton(_ => new TesseractService(
-                    Configuration["Tesseract:PythonPath"],
-                    Configuration["Tesseract:CaptchaSolvePath"]))
+                .AddSingleton(_ => new RunPythonTesseract(
+                    Configuration["Tesseract:Python:Path"],
+                    Configuration["Tesseract:Python:CaptchaSolvePath"]))
                 .AddTransient(_ =>
                 {
                     var pipeline = new DefaultHandler()
@@ -61,7 +61,7 @@ namespace EagleEye.Extractor.Console
 
                     return new AmazonHttpClient(pipeline)
                     {
-                        TesseractService = _.GetService<TesseractService>()
+                        PythonTesseractService = _.GetService<RunPythonTesseract>()
                     };
                 })
                 .BuildServiceProvider();

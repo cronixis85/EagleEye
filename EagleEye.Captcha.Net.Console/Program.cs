@@ -41,7 +41,7 @@ namespace EagleEye.Captcha.Net.Console
             using (var stream = File.OpenRead($@"images\{name}.jpg"))
             {
                 var byteImages = new SplitCaptcha().Execute(stream);
-                var captchaText = new TesseractService(@"C:\Program Files (x86)\Tesseract-OCR\tesseract.exe").RunAsync(byteImages).Result;
+                var captchaText = new DotNetTesseractService(@"C:\Program Files (x86)\Tesseract-OCR\tesseract.exe").RunAsync(byteImages).Result;
                 System.Console.WriteLine($"{name} == {captchaText} --> {name == captchaText}");
             }
         }

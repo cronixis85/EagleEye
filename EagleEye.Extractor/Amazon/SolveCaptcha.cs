@@ -11,7 +11,7 @@ namespace EagleEye.Extractor.Amazon
 {
     public partial class AmazonHttpClient
     {
-        public class SolveCaptcha
+        private class SolveCaptcha
         {
             private readonly AmazonHttpClient _httpClient;
             private readonly Uri _uriForLogging;
@@ -36,7 +36,7 @@ namespace EagleEye.Extractor.Amazon
                     var extractResult = await SolveCaptchaPageAsync(solveResult.NextCaptchaPage, cancellationToken);
 
                     // solve captcha with OCR
-                    var answer = _httpClient.TesseractService.Run(extractResult.CaptchaBase64);
+                    var answer = _httpClient.PythonTesseractService.Execute(extractResult.CaptchaBase64);
 
                     if (string.IsNullOrEmpty(answer) || answer.Length < 6)
                         solveResult.NextCaptchaPage = await GetNewCaptchaPageAsync(cancellationToken);
