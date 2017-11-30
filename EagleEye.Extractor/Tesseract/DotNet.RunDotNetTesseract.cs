@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
@@ -18,11 +19,11 @@ namespace EagleEye.Extractor.Tesseract
             EnsureDirectoryExist(TempDir);
         }
 
-        public async Task<string> Execute(byte[][] data)
+        public async Task<string> ExecuteAsync(IEnumerable<byte[]> data)
         {
             var tasks = data.Select(async (x, i) =>
             {
-                var result = await Execute(x);
+                var result = await ExecuteAsync(x);
                 return new { Index = i, CaptchaText = result };
             }).ToArray();
 
@@ -39,17 +40,17 @@ namespace EagleEye.Extractor.Tesseract
             return text;
         }
 
-        private Task<string> Execute(byte[] data)
+        private Task<string> ExecuteAsync(byte[] data)
         {
             var ticks = DateTime.Now.Ticks;
             var filePath = Path.Combine(TempDir, ticks + ".jpg");
 
             File.WriteAllBytes(filePath, data);
 
-            return Execute(filePath);
+            return ExecuteAsync(filePath);
         }
 
-        public Task<string> Execute(string imagePath)
+        public Task<string> ExecuteAsync(string imagePath)
         {
             var startInfo = new ProcessStartInfo
             {

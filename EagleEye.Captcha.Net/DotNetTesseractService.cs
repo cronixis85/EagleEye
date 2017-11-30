@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
@@ -18,12 +19,12 @@ namespace EagleEye.Captcha.Net
             EnsureDirectoryExist(TempDir);
         }
 
-        public async Task<string> RunAsync(byte[][] data)
+        public async Task<string> RunAsync(IEnumerable<byte[]> data)
         {
             var tasks = data.Select(async (x, i) =>
             {
                 var result = await RunAsync(x);
-                return new { Index = i, CaptchaText = result };
+                return new {Index = i, CaptchaText = result};
             }).ToArray();
 
             await Task.WhenAll(tasks);

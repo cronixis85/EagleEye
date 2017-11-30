@@ -1,5 +1,6 @@
 ﻿using System;
 using System.IO;
+using EagleEye.Extractor.Tesseract;
 
 namespace EagleEye.Captcha.Net.Console
 {
@@ -7,7 +8,30 @@ namespace EagleEye.Captcha.Net.Console
     {
         private static void Main(string[] args)
         {
-            //SolveImageWithOpenCV("ACYKRB");
+            SolveImageWithOpenCV("ACYKRB");
+            //SolveImageWithOpenCV("AKBFRA");
+            //SolveImageWithOpenCV("BPKURG");
+            //SolveImageWithOpenCV("CBTRUR");
+            //SolveImageWithOpenCV("CKFEBX");
+            //SolveImageWithOpenCV("CLMFFE");
+            //SolveImageWithOpenCV("CRYNRM");
+            //SolveImageWithOpenCV("EAAMGR");
+            //SolveImageWithOpenCV("HERYME");
+            //SolveImageWithOpenCV("HLGGNU");
+            //SolveImageWithOpenCV("JPUYJP");
+            //SolveImageWithOpenCV("JRMBJG");
+            //SolveImageWithOpenCV("JTNLHN");
+            //SolveImageWithOpenCV("KHNRFG");
+            //SolveImageWithOpenCV("LEAMXK");
+            //SolveImageWithOpenCV("LYGJHY");
+            //SolveImageWithOpenCV("MXJAAG");
+            //SolveImageWithOpenCV("NNPPHP");
+            //SolveImageWithOpenCV("NTJLBM");
+            //SolveImageWithOpenCV("PUFTXE");
+            //SolveImageWithOpenCV("PXCACE");
+            //SolveImageWithOpenCV("TEERXM");
+            //SolveImageWithOpenCV("XNKHFY");
+            //SolveImageWithOpenCV("YMEPAX");
 
             //SolveImage("ACYKRB");
             //SolveImage("AKBFRA");
@@ -36,39 +60,11 @@ namespace EagleEye.Captcha.Net.Console
             //SolveImage("YMEPAX");
         }
 
-        private static void SolveImage(string name)
-        {
-            using (var stream = File.OpenRead($@"images\{name}.jpg"))
-            {
-                var byteImages = new SplitCaptcha().Execute(stream);
-                var captchaText = new DotNetTesseractService(@"C:\Program Files (x86)\Tesseract-OCR\tesseract.exe").RunAsync(byteImages).Result;
-                System.Console.WriteLine($"{name} == {captchaText} --> {name == captchaText}");
-            }
-        }
-
         private static void SolveImageWithOpenCV(string name)
         {
-            var byteImages = new SplitCaptchaWithOpenCV().Execute($@"images\{name}.jpg");
-            //var captchaText = new TesseractService(@"C:\Program Files (x86)\Tesseract-OCR\tesseract.exe").RunAsync(byteImages).Result;
-            //System.Console.WriteLine($"{name} == {captchaText} --> {name == captchaText}");
-        }
-
-        private static string ReadFileAsBase64(string filePath)
-        {
-            using (var stream = File.OpenRead(filePath))
-            {
-                var bytes = new byte[stream.Length];
-                stream.Read(bytes, 0, (int) stream.Length);
-                var base64 = Convert.ToBase64String(bytes);
-                return base64;
-            }
-        }
-
-        private static MemoryStream ConvertBase64ToStream(string base64)
-        {
-            var bytes = Convert.FromBase64String(base64);
-            var stream = new MemoryStream(bytes);
-            return stream;
+            var splitImages = new SplitCaptchaWithOpenCv().Execute($@"images\{name}.jpg");
+            var captchaText = new RunDotNetTesseract(@"C:\Program Files (x86)\Tesseract-OCR\tesseract.exe").ExecuteAsync(splitImages).Result;
+            System.Console.WriteLine($"{name} == {captchaText} --> {name == captchaText}");
         }
     }
 }

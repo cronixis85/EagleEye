@@ -10,7 +10,11 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\EagleEye.Captcha.Net\EagleEye.Captcha.Net.csproj" />
+    <Folder Include=".tmp\" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\EagleEye.Extractor\EagleEye.Extractor.csproj" />
   </ItemGroup>
 
 </Project>
