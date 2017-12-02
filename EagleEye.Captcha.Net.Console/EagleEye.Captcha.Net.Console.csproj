@@ -10,10 +10,6 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Folder Include=".tmp\" />
-  </ItemGroup>
-
-  <ItemGroup>
     <ProjectReference Include="..\EagleEye.Extractor\EagleEye.Extractor.csproj" />
   </ItemGroup>
 

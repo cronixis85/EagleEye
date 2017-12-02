@@ -48,8 +48,8 @@ namespace EagleEye.Extractor.Tesseract
                 //    2);
 
                 var roi = new Mat(threshImage, boundingRect); //Crop the image
-                //Cv2.Threshold(roi, roi, Thresh, ThresholdMaxVal, ThresholdTypes.BinaryInv);
-                
+                Cv2.Threshold(roi, roi, Thresh, ThresholdMaxVal, ThresholdTypes.Binary);
+
                 const int marginFactor = 3;
                 var paddedWidth = roi.Width * marginFactor;
                 var paddedHeight = roi.Height * marginFactor;
@@ -87,13 +87,13 @@ namespace EagleEye.Extractor.Tesseract
                     switch (i)
                     {
                         case 0:
-                            new RotateCaptcha().Execute(current, 5);
+                            new RotateCaptcha().Execute(current, 10);
                             break;
                         case 1:
                             new RotateCaptcha().Execute(current, -15);
                             break;
                         case 2:
-                            new RotateCaptcha().Execute(current, 5);
+                            new RotateCaptcha().Execute(current, 15);
 
                             //// Skew
                             //var w = current.Rows;
@@ -136,12 +136,14 @@ namespace EagleEye.Extractor.Tesseract
                             break;
                     }
 
-                    Cv2.Resize(current, current, new Size(300, 300), 0, 0, InterpolationFlags.Cubic);
 
-                    Cv2.GaussianBlur(current, current, new Size(), 0.05);
-                    Cv2.AddWeighted(current, 2, current, 2, 0, current);
+
+                    Cv2.GaussianBlur(current, current, new Size(), 0.001);
+                    Cv2.AddWeighted(current, 1, current, 1, 0, current);
 
                     Cv2.Threshold(current, current, 10, ThresholdMaxVal, ThresholdTypes.BinaryInv);
+
+                    Cv2.Resize(current, current, new Size(300, 300), 0, 0, InterpolationFlags.Cubic);
 
                     //Cv2.ImShow("sharpen", current);
                     //Cv2.WaitKey();
