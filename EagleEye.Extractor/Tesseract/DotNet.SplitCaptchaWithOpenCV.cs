@@ -95,34 +95,36 @@ namespace EagleEye.Extractor.Tesseract
                         case 2:
                             new RotateCaptcha().Execute(current, 15);
 
-                            //// Skew
-                            //var w = current.Rows;
-                            //var h = current.Cols;
+                            // Skew
+                            var w = current.Rows;
+                            var h = current.Cols;
 
-                            //var wMid = w / 2;
-                            //var hMid = h / 2;
+                            var wMid = w / 2;
+                            var hMid = h / 2;
 
-                            //var srcTri = new[]
-                            //{
-                            //    new Point2f(0, hMid),
-                            //    new Point2f(w, hMid),
-                            //    new Point2f(0, h),
-                            //    //new Point2f(w, h)
-                            //};
+                            var srcTri = new[]
+                            {
+                                new Point2f(0, hMid),
+                                new Point2f(w, hMid),
+                                new Point2f(0, h),
+                                //new Point2f(w, h)
+                            };
 
-                            //var dstTri = new[]
-                            //{
-                            //    new Point2f(0, hMid),
-                            //    new Point2f(w, hMid),
-                            //    new Point2f(-w / 10f, h),
-                            //    //new Point2f(w / 20f, h)
-                            //};
+                            var dstTri = new[]
+                            {
+                                new Point2f(0, hMid),
+                                new Point2f(w, hMid),
+                                new Point2f(-w / 10f, h),
+                                //new Point2f(w / 20f, h)
+                            };
 
-                            //// Get the Affine Transform
-                            //var warpMat = Cv2.GetAffineTransform(srcTri, dstTri);
+                            // Get the Affine Transform
+                            var warpMat = Cv2.GetAffineTransform(srcTri, dstTri);
 
-                            //Cv2.WarpAffine(current, current, warpMat, current.Size(), InterpolationFlags.Area);
+                            Cv2.WarpAffine(current, current, warpMat, current.Size(), InterpolationFlags.Area);
 
+                            //Cv2.ImShow("sharpen", current);
+                            //Cv2.WaitKey();
 
                             break;
                         case 3:

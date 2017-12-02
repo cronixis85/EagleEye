@@ -36,32 +36,6 @@ namespace EagleEye.Captcha.Net.Console
             };
 
             System.Console.WriteLine($"{results.Count(x => x)} of {results.Length}");
-
-            //SolveImage("ACYKRB");
-            //SolveImage("AKBFRA");
-            //SolveImage("BPKURG");
-            //SolveImage("CBTRUR");
-            //SolveImage("CKFEBX");
-            //SolveImage("CLMFFE");
-            //SolveImage("CRYNRM");
-
-            //SolveImage("EAAMGR");
-            //SolveImage("HERYME");
-            //SolveImage("HLGGNU");
-            //SolveImage("JPUYJP");
-            //SolveImage("JRMBJG");
-            //SolveImage("JTNLHN");
-            //SolveImage("KHNRFG");
-            //SolveImage("LEAMXK");
-            //SolveImage("LYGJHY");
-            //SolveImage("MXJAAG");
-            //SolveImage("NNPPHP");
-            //SolveImage("NTJLBM");
-            //SolveImage("PUFTXE");
-            //SolveImage("PXCACE");
-            //SolveImage("TEERXM");
-            //SolveImage("XNKHFY");
-            //SolveImage("YMEPAX");
         }
 
         private static bool SolveImageWithOpenCV(string name)
