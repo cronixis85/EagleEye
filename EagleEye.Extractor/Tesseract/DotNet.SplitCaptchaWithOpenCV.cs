@@ -1,13 +1,14 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Security.Cryptography.X509Certificates;
 using OpenCvSharp;
 
 namespace EagleEye.Extractor.Tesseract
 {
     public class SplitCaptchaWithOpenCv
     {
-        private const double Thresh = 30;
+        private const double Thresh = 70;
         private const double ThresholdMaxVal = 255;
 
         public List<byte[]> Execute(string path)
@@ -18,7 +19,7 @@ namespace EagleEye.Extractor.Tesseract
             Cv2.CvtColor(src, gray, ColorConversionCodes.BGRA2GRAY);
 
             var threshImage = new Mat();
-            Cv2.Threshold(gray, threshImage, Thresh, ThresholdMaxVal, ThresholdTypes.BinaryInv); // Threshold to find contour
+            Cv2.Threshold(gray, threshImage, 30, ThresholdMaxVal, ThresholdTypes.BinaryInv); // Threshold to find contour
 
             Cv2.FindContours(
                 threshImage,
@@ -30,7 +31,7 @@ namespace EagleEye.Extractor.Tesseract
             if (contours.Length == 0)
                 throw new NotSupportedException("Couldn't find any object in the image.");
 
-            var results = new List<OrderedByteResult>();
+            var results = new List<OrderedMatResult>();
 
             var contourIndex = 0;
             while (contourIndex >= 0)
@@ -40,62 +41,122 @@ namespace EagleEye.Extractor.Tesseract
 
                 var boundingRect = Cv2.BoundingRect(contour); //Find bounding rect for each contour
 
-                Cv2.Rectangle(src,
-                    new Point(boundingRect.X, boundingRect.Y),
-                    new Point(boundingRect.X + boundingRect.Width, boundingRect.Y + boundingRect.Height),
-                    new Scalar(0, 0, 255),
-                    2);
+                //Cv2.Rectangle(src,
+                //    new Point(boundingRect.X, boundingRect.Y),
+                //    new Point(boundingRect.X + boundingRect.Width, boundingRect.Y + boundingRect.Height),
+                //    new Scalar(0, 0, 0),
+                //    2);
 
                 var roi = new Mat(threshImage, boundingRect); //Crop the image
-                Cv2.Threshold(roi, roi, Thresh, ThresholdMaxVal, ThresholdTypes.BinaryInv);
+                //Cv2.Threshold(roi, roi, Thresh, ThresholdMaxVal, ThresholdTypes.BinaryInv);
+                
+                const int marginFactor = 3;
+                var paddedWidth = roi.Width * marginFactor;
+                var paddedHeight = roi.Height * marginFactor;
 
-                //Cv2.ImShow("roi", roi);
-                //Cv2.WaitKey();
+                var roiPadded = new Mat(paddedWidth, paddedHeight, roi.Type());
+                roiPadded.SetTo(new Scalar(0, 0, 0));
 
-                var roiPadded = new Mat(roi.Width + 20, roi.Height + 20, roi.Type());
-                roiPadded.SetTo(new Scalar(255, 255, 255));
+                var shiftWidth = (roiPadded.Width - roi.Width) / 2;
+                var shiftHeight = (roiPadded.Height - roi.Height) / 2;
+                
+                var destRoi = new Rect(shiftWidth, shiftHeight - 2, roi.Width, roi.Height);
 
-                var shiftWidth = 5;
-                var shiftHeight = 5;
+                roi.CopyTo(roiPadded.SubMat(destRoi));
 
-                var sourceRoi = new Rect(Math.Max(-shiftWidth, 0), Math.Max(-shiftHeight, 0), roi.Width, roi.Height);
-                var destRoi = new Rect(Math.Max(shiftWidth, 0), Math.Max(shiftHeight, 0), roi.Width, roi.Height);
-
-                roi.SubMat(sourceRoi)
-                   .CopyTo(roiPadded.SubMat(destRoi));
-
-                //Cv2.ImShow("roiPadded", roiPadded);
-                //Cv2.WaitKey();
-
-                var bytes = roiPadded.ImEncode(".jpg");
-                //Cv2.ImWrite($@".tmp\{contourIndex}.jpg", roiPadded);
-                results.Add(new OrderedByteResult
+                results.Add(new OrderedMatResult
                 {
-                    Data = bytes,
+                    Data = roiPadded,
                     Order = leftmostX
                 });
 
                 contourIndex = hierarchyIndexes[contourIndex].Next;
             }
 
-            //Cv2.ImShow("Segmented Source", src);
-            //Cv2.ImShow("Detected", dst);
-
-            //Cv2.ImWrite("dest.jpg", dst);
-
-            //Cv2.WaitKey();
-
             var ordered = results
                 .OrderBy(x => x.Order)
                 .Select(x => x.Data)
                 .ToList();
 
-            return ordered;
+            // rotations
+            if (ordered.Count == 6)
+                for (var i = 0; i < ordered.Count; i++)
+                {
+                    var current = ordered[i];
+                    
+                    switch (i)
+                    {
+                        case 0:
+                            new RotateCaptcha().Execute(current, 5);
+                            break;
+                        case 1:
+                            new RotateCaptcha().Execute(current, -15);
+                            break;
+                        case 2:
+                            new RotateCaptcha().Execute(current, 5);
+
+                            //// Skew
+                            //var w = current.Rows;
+                            //var h = current.Cols;
+
+                            //var wMid = w / 2;
+                            //var hMid = h / 2;
+
+                            //var srcTri = new[]
+                            //{
+                            //    new Point2f(0, hMid),
+                            //    new Point2f(w, hMid),
+                            //    new Point2f(0, h),
+                            //    //new Point2f(w, h)
+                            //};
+
+                            //var dstTri = new[]
+                            //{
+                            //    new Point2f(0, hMid),
+                            //    new Point2f(w, hMid),
+                            //    new Point2f(-w / 10f, h),
+                            //    //new Point2f(w / 20f, h)
+                            //};
+
+                            //// Get the Affine Transform
+                            //var warpMat = Cv2.GetAffineTransform(srcTri, dstTri);
+
+                            //Cv2.WarpAffine(current, current, warpMat, current.Size(), InterpolationFlags.Area);
+
+
+                            break;
+                        case 3:
+                            new RotateCaptcha().Execute(current, -15);
+                            break;
+                        case 4:
+                            new RotateCaptcha().Execute(current, 5);
+                            break;
+                        case 5:
+                            new RotateCaptcha().Execute(current, -15);
+                            break;
+                    }
+
+                    Cv2.Resize(current, current, new Size(300, 300), 0, 0, InterpolationFlags.Cubic);
+
+                    Cv2.GaussianBlur(current, current, new Size(), 0.05);
+                    Cv2.AddWeighted(current, 2, current, 2, 0, current);
+
+                    Cv2.Threshold(current, current, 10, ThresholdMaxVal, ThresholdTypes.BinaryInv);
+
+                    //Cv2.ImShow("sharpen", current);
+                    //Cv2.WaitKey();
+                }
+
+            var datas = ordered
+                .Select(x => x.ImEncode(".jpg"))
+                .ToList();
+
+            return datas;
         }
 
-        private class OrderedByteResult
+        private class OrderedMatResult
         {
-            public byte[] Data { get; set; }
+            public Mat Data { get; set; }
 
             public int Order { get; set; }
         }

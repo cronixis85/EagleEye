@@ -9,7 +9,7 @@ namespace EagleEye.Extractor.Tesseract
 {
     public class RunDotNetTesseract
     {
-        private const string Config = @"stdout -c tessedit_char_whitelist=ABCDEFGHIJKLMNOPQRSTUVWXYZ -psm 7";
+        private const string Config = @"stdout -c tessedit_char_whitelist=ABCDEFGHIJKLMNOPQRSTUVWXYZ --psm 7";
         private const string TempDir = ".tmp";
         private readonly string _tesseractPath;
 
