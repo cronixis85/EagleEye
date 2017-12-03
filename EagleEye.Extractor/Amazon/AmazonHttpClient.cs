@@ -19,7 +19,7 @@ namespace EagleEye.Extractor.Amazon
         private static readonly Uri SiteDirectoryUri = new Uri("/gp/site-directory/", UriKind.Relative);
         private static readonly Uri ValidateCaptcha = new Uri("/errors/validateCaptcha", UriKind.Relative);
 
-        public RunPythonTesseract PythonTesseractService { get; set; }
+        public RunDotNetTesseract TesseractService { get; set; }
 
         public AmazonHttpClient() : this(new HttpClientHandler())
         {

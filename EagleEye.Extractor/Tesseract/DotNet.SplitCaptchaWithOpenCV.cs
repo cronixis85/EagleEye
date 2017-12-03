@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Security.Cryptography.X509Certificates;
 using OpenCvSharp;
 
 namespace EagleEye.Extractor.Tesseract
@@ -11,9 +10,9 @@ namespace EagleEye.Extractor.Tesseract
         private const double Thresh = 70;
         private const double ThresholdMaxVal = 255;
 
-        public List<byte[]> Execute(string path)
+        public List<byte[]> Execute(byte[] data)
         {
-            var src = Cv2.ImRead(path);
+            var src = Cv2.ImDecode(data, ImreadModes.Color);
 
             var gray = new Mat();
             Cv2.CvtColor(src, gray, ColorConversionCodes.BGRA2GRAY);
@@ -59,7 +58,7 @@ namespace EagleEye.Extractor.Tesseract
 
                 var shiftWidth = (roiPadded.Width - roi.Width) / 2;
                 var shiftHeight = (roiPadded.Height - roi.Height) / 2;
-                
+
                 var destRoi = new Rect(shiftWidth, shiftHeight - 2, roi.Width, roi.Height);
 
                 roi.CopyTo(roiPadded.SubMat(destRoi));
@@ -83,7 +82,7 @@ namespace EagleEye.Extractor.Tesseract
                 for (var i = 0; i < ordered.Count; i++)
                 {
                     var current = ordered[i];
-                    
+
                     switch (i)
                     {
                         case 0:
@@ -106,7 +105,7 @@ namespace EagleEye.Extractor.Tesseract
                             {
                                 new Point2f(0, hMid),
                                 new Point2f(w, hMid),
-                                new Point2f(0, h),
+                                new Point2f(0, h)
                                 //new Point2f(w, h)
                             };
 
@@ -114,7 +113,7 @@ namespace EagleEye.Extractor.Tesseract
                             {
                                 new Point2f(0, hMid),
                                 new Point2f(w, hMid),
-                                new Point2f(-w / 10f, h),
+                                new Point2f(-w / 10f, h)
                                 //new Point2f(w / 20f, h)
                             };
 
@@ -137,7 +136,6 @@ namespace EagleEye.Extractor.Tesseract
                             new RotateCaptcha().Execute(current, -15);
                             break;
                     }
-
 
 
                     Cv2.GaussianBlur(current, current, new Size(), 0.001);

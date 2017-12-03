@@ -54,6 +54,7 @@ namespace EagleEye.Extractor.Console
                 .AddSingleton(_ => new RunPythonTesseract(
                     Configuration["Tesseract:Python:Path"],
                     Configuration["Tesseract:Python:CaptchaSolvePath"]))
+                .AddSingleton(_ => new RunDotNetTesseract(Configuration["Tesseract:Path"]))
                 .AddTransient(_ =>
                 {
                     var pipeline = new DefaultHandler()
@@ -61,7 +62,7 @@ namespace EagleEye.Extractor.Console
 
                     return new AmazonHttpClient(pipeline)
                     {
-                        PythonTesseractService = _.GetService<RunPythonTesseract>()
+                        TesseractService = _.GetService<RunDotNetTesseract>()
                     };
                 })
                 .BuildServiceProvider();

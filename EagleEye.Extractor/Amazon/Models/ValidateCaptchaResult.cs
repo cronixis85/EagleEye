@@ -11,6 +11,6 @@ namespace EagleEye.Extractor.Amazon.Models
 
         public Uri CaptchaImageUri { get; set; }
 
-        public string CaptchaBase64 { get; set; }
+        public byte[] CaptchaImageBytes { get; set; }
     }
 }

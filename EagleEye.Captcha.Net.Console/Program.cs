@@ -1,4 +1,5 @@
-﻿using System.Linq;
+﻿using System.IO;
+using System.Linq;
 using EagleEye.Extractor.Tesseract;
 
 namespace EagleEye.Captcha.Net.Console
@@ -40,8 +41,9 @@ namespace EagleEye.Captcha.Net.Console
 
         private static bool SolveImageWithOpenCV(string name)
         {
-            var splitImages = new SplitCaptchaWithOpenCv().Execute($@"images\{name}.jpg");
-            var captchaText = new RunDotNetTesseract(@"C:\Program Files (x86)\Tesseract-OCR\tesseract.exe").ExecuteAsync(splitImages).Result.ToUpper().Replace(".", string.Empty);
+            var buffer = File.ReadAllBytes($@"images\{name}.jpg");
+            //var splitImages = new SplitCaptchaWithOpenCv().Execute(buffer);
+            var captchaText = new RunDotNetTesseract(@"C:\Program Files (x86)\Tesseract-OCR\tesseract.exe").ExecuteAsync(buffer).Result;
             System.Console.WriteLine($"{name} == {captchaText} --> {name == captchaText}");
 
             return name == captchaText;

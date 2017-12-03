@@ -19,11 +19,13 @@ namespace EagleEye.Extractor.Tesseract
             EnsureDirectoryExist(TempDir);
         }
 
-        public async Task<string> ExecuteAsync(IEnumerable<byte[]> data)
+        public async Task<string> ExecuteAsync(byte[] data)
         {
-            var tasks = data.Select(async (x, i) =>
+            var sprites = new SplitCaptchaWithOpenCv().Execute(data);
+
+            var tasks = sprites.Select(async (x, i) =>
             {
-                var result = await ExecuteAsync(x);
+                var result = await ExecuteSingleSpriteAsync(x);
                 return new { Index = i, CaptchaText = result };
             }).ToArray();
 
@@ -37,20 +39,26 @@ namespace EagleEye.Extractor.Tesseract
 
             var text = string.Concat(results);
 
-            return text;
+            return text.ToUpper().Replace(".", string.Empty);
         }
 
-        private Task<string> ExecuteAsync(byte[] data)
+        private async Task<string> ExecuteSingleSpriteAsync(byte[] data)
         {
             var ticks = DateTime.Now.Ticks;
             var filePath = Path.Combine(TempDir, ticks + ".jpg");
 
-            File.WriteAllBytes(filePath, data);
-
-            return ExecuteAsync(filePath);
+            try
+            {
+                await File.WriteAllBytesAsync(filePath, data);
+                return await ExecuteAsync(filePath);
+            }
+            finally
+            {
+                File.Delete(filePath);
+            }
         }
 
-        public Task<string> ExecuteAsync(string imagePath)
+        private async Task<string> ExecuteAsync(string imagePath)
         {
             var startInfo = new ProcessStartInfo
             {
@@ -73,7 +81,7 @@ namespace EagleEye.Extractor.Tesseract
             // Read the standard output of the app we called.  
             using (var myStreamReader = process.StandardOutput)
             {
-                var captcha = myStreamReader.ReadLineAsync();
+                var captcha = await myStreamReader.ReadLineAsync();
 
                 // wait exit signal from the app we called 
                 process.WaitForExit();

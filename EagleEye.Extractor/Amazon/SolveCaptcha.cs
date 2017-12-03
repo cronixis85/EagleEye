@@ -36,7 +36,7 @@ namespace EagleEye.Extractor.Amazon
                     var extractResult = await SolveCaptchaPageAsync(solveResult.NextCaptchaPage, cancellationToken);
 
                     // solve captcha with OCR
-                    var answer = _httpClient.PythonTesseractService.Execute(extractResult.CaptchaBase64);
+                    var answer = await _httpClient.TesseractService.ExecuteAsync(extractResult.CaptchaImageBytes);
 
                     if (string.IsNullOrEmpty(answer) || answer.Length < 6)
                         solveResult.NextCaptchaPage = await GetNewCaptchaPageAsync(cancellationToken);
@@ -50,7 +50,7 @@ namespace EagleEye.Extractor.Amazon
             {
                 // get captcha image
                 var result = new ExtractCaptcha().ExecuteCore(captchaPage);
-                result.CaptchaBase64 = await GetImageBase64Async(result.CaptchaImageUri, cancellationToken);
+                result.CaptchaImageBytes = await GetImageBytes(result.CaptchaImageUri, cancellationToken);
                 return result;
             }
 
@@ -97,13 +97,13 @@ namespace EagleEye.Extractor.Amazon
                 }
             }
 
-            private async Task<string> GetImageBase64Async(Uri imageUri, CancellationToken cancellationToken)
+            private async Task<byte[]> GetImageBytes(Uri imageUri, CancellationToken cancellationToken)
             {
                 using (var response = await _httpClient.GetAsync(imageUri, cancellationToken))
                 {
                     var bytes = await response.Content.ReadAsByteArrayAsync();
-                    var s = Convert.ToBase64String(bytes);
-                    return s;
+                    var data = bytes;
+                    return data;
                 }
             }
 
