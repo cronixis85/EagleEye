@@ -42,6 +42,12 @@
     <None Update="Amazon\Fakes\productDetails_detailBullet.html">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
+    <None Update="Amazon\Fakes\productDetails_priceWithFreeReturns.html">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Update="Amazon\Fakes\productDetails_singleCategoryRanking.html">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
     <None Update="Amazon\Fakes\productDetail_withVariance.html">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>

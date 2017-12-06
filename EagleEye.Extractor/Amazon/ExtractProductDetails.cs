@@ -46,6 +46,7 @@ namespace EagleEye.Extractor.Amazon
                                     var detailsTable = t
                                         .Descendants("tr")
                                         .Where(tr => tr.Attributes["id"]?.Value != "regularprice_savings" && tr.Attributes["id"]?.Value != "dealprice_savings")
+                                        .Where(tr => tr.Attributes["class"] == null || !tr.Attributes["class"].Value.Contains("couponFeature"))
                                         .Select(tr =>
                                         {
                                             var td = tr.Elements("td").ToArray();
@@ -56,8 +57,14 @@ namespace EagleEye.Extractor.Amazon
                                             return new
                                             {
                                                 Key = property,
-                                                Value = decimal.Parse(value)
+                                                Value = value
                                             };
+                                        })
+                                        .Where(tr => !tr.Value.Equals("Lower price", StringComparison.OrdinalIgnoreCase))
+                                        .Select(tr => new
+                                        {
+                                            tr.Key,
+                                            Value = decimal.Parse(tr.Value)
                                         })
                                         .ToArray();
 
@@ -441,7 +448,7 @@ namespace EagleEye.Extractor.Amazon
                 }
 
                 var li = rankNode
-                    .Element("ul")
+                    .Element("ul")?
                     .Elements("li")
                     .Select(x =>
                     {
@@ -467,6 +474,9 @@ namespace EagleEye.Extractor.Amazon
                         };
                     })
                     .ToArray();
+
+                if (li == null)
+                    return categoryRanking;
 
                 foreach (var item in li)
                     categoryRanking.Add(item.Category, item.Rank);

@@ -215,5 +215,56 @@ namespace EagleEye.Extractor.Tests.Amazon
             Assert.Equal("Large/X-Large", details.Variances[1].Name);
             Assert.Equal("B00OUP6JQA", details.Variances[1].Asin);
         }
+
+        [Fact]
+        public void ShouldReturnProductDetailsWithSingleCategoryRanking()
+        {
+            var doc = GetHtmlDocument("productDetails_singleCategoryRanking.html");
+
+            var details = new AmazonHttpClient.ExtractProductDetails().Execute(doc);
+
+            // https://www.amazon.com/Cooling-Sleeves-Protection-outside-activities/dp/B06Y5BKGB4/ref=lp_11443905011_1_15?s=outdoor-recreation&amp;ie=UTF8&amp;qid=1512580925&amp;sr=1-15
+            Assert.Equal(@"KOVISS Sports Cooling Arm Sleeves UV Protection Unisex Sun Block Warmer or Cooler Bike Hiking Golf Cycle Drive Outside Activities", details.Name);
+            Assert.Equal("koviss", details.Brand);
+            Assert.Equal(18.99m, details.CurrentPrice);
+            Assert.Equal(18.99m, details.OriginalPrice);
+            Assert.Null(details.Dimensions);
+            Assert.Null(details.ItemWeight);
+            Assert.Equal("6.4 ounces", details.ShippingWeight);
+            Assert.Null(details.Manufacturer);
+            Assert.Equal("B06Y5BKGB4", details.Asin);
+            Assert.Equal("LYSB06Y5BKGB4-SPRTSEQIP", details.ModelNumber);
+            Assert.Equal(4.0f, details.Rating);
+            Assert.Equal(357, details.TotalReviews);
+            Assert.Equal(66008, details.Rank["Sports & Outdoors"]);
+            Assert.Null(details.FirstAvailableOn);
+        }
+
+        [Fact]
+        public void ShouldReturnProductDetailsWithPriceAndFreeReturns()
+        {
+            var doc = GetHtmlDocument("productDetails_priceWithFreeReturns.html");
+
+            var details = new AmazonHttpClient.ExtractProductDetails().Execute(doc);
+
+            // https://www.amazon.com/Compression-20-30mmHg-Athletics-Pregnancy-Circulation/dp/B0759FB1GK/ref=lp_9590791011_1_16?s=sports-and-fitness-clothing&amp;ie=UTF8&amp;qid=1512580926&amp;sr=1-16
+            Assert.Equal(@"Compression Socks for Men & Women (20-30mmHg), BEST for Athletics, Running, Nurses, Shin Splints, Flight Travel, Pregnancy. Improve Blood Circulation & Muscle Recovery", details.Name);
+            Assert.Equal("aZengear", details.Brand);
+            Assert.Equal(14.99m, details.CurrentPrice);
+            Assert.Equal(14.99m, details.OriginalPrice);
+            Assert.Null(details.Dimensions);
+            Assert.Null(details.ItemWeight);
+            Assert.Null(details.ShippingWeight);
+            Assert.Null(details.Manufacturer);
+            Assert.Equal("B0759KV3WV", details.Asin);
+            Assert.Null(details.ModelNumber);
+            Assert.Equal(4.9f, details.Rating);
+            Assert.Equal(16, details.TotalReviews);
+            Assert.Equal(67890, details.Rank["Clothing, Shoes & Jewelry"]);
+            Assert.Equal(18, details.Rank["Sports & Outdoors > Outdoor Recreation > Outdoor Clothing > Men > Compression Socks"]);
+            Assert.Equal(96, details.Rank["Sports & Outdoors > Sports & Fitness > Clothing > Men > Compression"]);
+            Assert.Equal(222, details.Rank["Sports & Outdoors > Sports & Fitness > Team Sports > Basketball > Clothing > Men"]);
+            Assert.Equal(new DateTime(2017, 8, 31), details.FirstAvailableOn);
+        }
     }
 }
