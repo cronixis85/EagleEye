@@ -182,5 +182,38 @@ namespace EagleEye.Extractor.Tests.Amazon
             Assert.Null(details.Rank);
             Assert.Null(details.FirstAvailableOn);
         }
+
+        [Fact]
+        public void ShouldReturnProductDetailsWithVarianceInfo()
+        {
+            var doc = GetHtmlDocument("productDetail_withVariance.html");
+
+            var details = new AmazonHttpClient.ExtractProductDetails().Execute(doc);
+
+            // https://www.amazon.com/Sockwell-Compression-Socks-Ideal-Travel-Sports-Prolonged-Sitting-Standing/dp/B00OUP6JQA/ref=lp_9590791011_1_26?s=sports-and-fitness-clothing&amp;ie=UTF8&amp;qid=1512275962&amp;sr=1-26
+            Assert.Equal(@"Sockwell Men's Concentric Stripe Graduated Compression Socks", details.Name);
+            Assert.Equal("Sockwell", details.Brand);
+            Assert.Null(details.CurrentPrice);
+            Assert.Null(details.OriginalPrice);
+            Assert.Null(details.Dimensions);
+            Assert.Null(details.ItemWeight);
+            Assert.Equal("1.6 ounces", details.ShippingWeight);
+            Assert.Null(details.Manufacturer);
+            Assert.Equal("B00OUP0RTA", details.Asin);
+            Assert.Null(details.ModelNumber);
+            Assert.Equal(4.1f, details.Rating);
+            Assert.Equal(46, details.TotalReviews);
+            Assert.Equal(13885, details.Rank["Sports & Outdoors"]);
+            Assert.Equal(9, details.Rank["Sports & Outdoors > Outdoor Recreation > Outdoor Clothing > Men > Compression Socks"]);
+            Assert.Equal(46, details.Rank["Sports & Outdoors > Sports & Fitness > Clothing > Men > Compression"]);
+            Assert.Equal(118, details.Rank["Sports & Outdoors > Sports & Fitness > Team Sports > Basketball > Clothing > Men"]);
+            Assert.Null(details.FirstAvailableOn);
+
+            Assert.Equal("Medium/Large", details.Variances[0].Name);
+            Assert.Equal("B00OUP6JR4", details.Variances[0].Asin);
+
+            Assert.Equal("Large/X-Large", details.Variances[1].Name);
+            Assert.Equal("B00OUP6JQA", details.Variances[1].Asin);
+        }
     }
 }

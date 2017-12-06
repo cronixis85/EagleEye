@@ -65,9 +65,24 @@ namespace EagleEye.Extractor.Amazon
             var result = await GetAsyncAsHtmlDocWithEnsureAllowed(productUri, cancellationToken);
             var details = new ExtractProductDetails().Execute(result.HtmlDocument);
 
+            // set the final URL if there is any redirect
             details.Url = result.RedirectUri != null
                 ? result.RedirectUri.OriginalString
                 : productUri.OriginalString;
+
+            if (details.Variances?.Count > 0)
+            {
+                foreach (var variance in details.Variances)
+                {
+                    // https://www.amazon.com/Sockwell-Compression-Socks-Ideal-Travel-Sports-Prolonged-Sitting-Standing/dp/B00OUP6JQA/ref=lp_9590791011_1_26?s=sports-and-fitness-clothing&amp;ie=UTF8&amp;qid=1512275962&amp;sr=1-26
+
+                    var eraseStartIndex = details.Url.IndexOf("/dp/", StringComparison.Ordinal);
+                    var erased = details.Url.Remove(eraseStartIndex + 4);
+                    var url = $"{erased}{variance.Asin}?th=1&psc=1";
+
+                    variance.Url = url;
+                }
+            }
 
             Log.Information("{Uri}: Completed", productUri);
 

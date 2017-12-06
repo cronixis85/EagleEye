@@ -69,6 +69,8 @@ namespace EagleEye.Extractor.Console.Models
 
         public DateTime? UpdatedOn { get; set; }
 
-        //public List<SubcategoryProduct> SubcategoryProducts { get; set; }
+        public bool HasVariances { get; set; }
+
+        public List<ProductVariance> Variances { get; set; }
     }
 }

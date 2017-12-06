@@ -31,39 +31,70 @@ namespace EagleEye.Extractor.Amazon
                     var nameNode = node.SelectSingleNode("//span[@id='productTitle']");
                     product.Name = nameNode?.InnerText.Clean();
 
-                    // price
+                    // price (only if variance == null)
                     var priceNode = node.SelectSingleNode("//div[@id='price']");
 
                     if (priceNode != null)
                     {
-                        var pricing = priceNode
-                            .Descendants("table")
-                            .SelectMany(t =>
-                            {
-                                var detailsTable = t
-                                    .Descendants("tr")
-                                    .Where(tr => tr.Attributes["id"]?.Value != "regularprice_savings" && tr.Attributes["id"]?.Value != "dealprice_savings")
-                                    .Select(tr =>
-                                    {
-                                        var td = tr.Elements("td").ToArray();
-                                        
-                                        var property = td[0]?.InnerText.Clean().Replace(":", "");
-                                        var value = td[1].Element("span").InnerText.Replace("$", "").Replace(",", "");
-
-                                        return new
+                        // ensure is not a price range
+                        if (!priceNode.InnerText.Trim().Contains(" - "))
+                        {
+                            var pricing = priceNode
+                                .Descendants("table")
+                                .SelectMany(t =>
+                                {
+                                    var detailsTable = t
+                                        .Descendants("tr")
+                                        .Where(tr => tr.Attributes["id"]?.Value != "regularprice_savings" && tr.Attributes["id"]?.Value != "dealprice_savings")
+                                        .Select(tr =>
                                         {
-                                            Key = property,
-                                            Value = decimal.Parse(value)
-                                        };
-                                    })
-                                    .ToArray();
+                                            var td = tr.Elements("td").ToArray();
 
-                                return detailsTable;
+                                            var property = td[0]?.InnerText.Clean().Replace(":", "");
+                                            var value = td[1].Element("span").InnerText.Replace("$", "").Replace(",", "");
+
+                                            return new
+                                            {
+                                                Key = property,
+                                                Value = decimal.Parse(value)
+                                            };
+                                        })
+                                        .ToArray();
+
+                                    return detailsTable;
+                                })
+                                .Where(x => x.Key != null)
+                                .ToDictionary(x => x.Key, x => x.Value);
+
+                            SetPrice(product, pricing);
+                        }
+                    }
+
+                    // product variance
+                    var variance = node.SelectSingleNode("//div[@id='twister_feature_div']");
+                    var varianceOptions = variance
+                        ?.Descendants("option")
+                        .ToArray();
+
+                    if (varianceOptions != null && varianceOptions.Length > 0)
+                    {
+                        var options = varianceOptions
+                            .Where(x => x.Attributes["value"]?.Value != "-1")
+                            .Select(x =>
+                            {
+                                var asin = x.Attributes["value"].Value;
+                                var asinRemoveIndex = asin.IndexOf(",", StringComparison.Ordinal);
+                                asin = asin.Remove(0, asinRemoveIndex + 1);
+
+                                return new ProductVariance
+                                {
+                                    Name = x.Attributes["data-a-html-content"].Value.Trim(),
+                                    Asin = asin
+                                };
                             })
-                            .Where(x => x.Key != null)
-                            .ToDictionary(x => x.Key, x => x.Value);
+                            .ToList();
 
-                        SetPrice(product, pricing);
+                        product.Variances = options;
                     }
 
                     // product-details_feature_div

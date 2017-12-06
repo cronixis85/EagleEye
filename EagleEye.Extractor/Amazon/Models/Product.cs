@@ -38,5 +38,7 @@ namespace EagleEye.Extractor.Amazon.Models
         public DateTime? FirstAvailableOn { get; set; }
 
         public string Errors { get; set; }
+
+        public List<ProductVariance> Variances { get; set; }
     }
 }

@@ -7,5 +7,6 @@
         public bool UpdateCategories { get; set; }
         public bool UpdateProducts { get; set; }
         public bool UpdateProductDetails { get; set; }
+        public bool UpdateProductVariances { get; set; }
     }
 }

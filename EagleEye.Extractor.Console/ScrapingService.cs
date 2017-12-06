@@ -49,7 +49,8 @@ namespace EagleEye.Extractor.Console
                     UpdateDepartments = Convert.ToBoolean(Configuration["ScrapeSettings:UpdateDepartments"]),
                     UpdateCategories = Convert.ToBoolean(Configuration["ScrapeSettings:UpdateCategories"]),
                     UpdateProducts = Convert.ToBoolean(Configuration["ScrapeSettings:UpdateProducts"]),
-                    UpdateProductDetails = Convert.ToBoolean(Configuration["ScrapeSettings:UpdateProductDetails"])
+                    UpdateProductDetails = Convert.ToBoolean(Configuration["ScrapeSettings:UpdateProductDetails"]),
+                    UpdateProductVariances = Convert.ToBoolean(Configuration["ScrapeSettings:UpdateProductVariances"])
                 })
                 .AddSingleton(_ => new RunPythonTesseract(
                     Configuration["Tesseract:Python:Path"],
@@ -84,6 +85,9 @@ namespace EagleEye.Extractor.Console
 
             if (settings.UpdateProductDetails)
                 UpdateProductsDetailsAsync(services, cts.Token).Wait(cts.Token);
+
+            if (settings.UpdateProductVariances)
+                UpdateProductVariancesAsync(services, cts.Token).Wait(cts.Token);
 
             Log.CloseAndFlush();
         }
@@ -198,6 +202,7 @@ namespace EagleEye.Extractor.Console
 
                 var products = dbContext.Products
                                         .Where(x => x.Status == pendingStatus)
+                                        .Take(500)
                                         .ToArray();
 
                 var getProductDetailTasks = products
@@ -225,6 +230,21 @@ namespace EagleEye.Extractor.Console
                             p.Errors = details.Errors;
                             p.UpdatedOn = DateTime.Now;
                             p.Status = ProductStatus.Completed.ToString();
+
+                            if (details.Variances?.Count > 0)
+                            {
+                                p.HasVariances = true;
+                                p.Variances = details.Variances
+                                                     .Select(x => new ProductVariance
+                                                     {
+                                                         Name = x.Name,
+                                                         Asin = x.Asin,
+                                                         Url = x.Url,
+                                                         Status = ProductStatus.Pending.ToString(),
+                                                         UpdatedOn = DateTime.Now
+                                                     })
+                                                     .ToList();
+                            }
                         }
                         catch (Exception e)
                         {
@@ -241,6 +261,47 @@ namespace EagleEye.Extractor.Console
                     .ToArray();
 
                 await Task.WhenAll(getProductDetailTasks);
+            }
+        }
+
+        private async Task UpdateProductVariancesAsync(IServiceProvider services, CancellationToken cancellationToken)
+        {
+            using (var dbContext = services.GetService<ApplicationDbContext>())
+            using (var httpClient = services.GetService<AmazonHttpClient>())
+            {
+                var pendingStatus = ProductStatus.Pending.ToString();
+
+                var variances = dbContext.ProductVariances
+                                         .Where(x => x.Status == pendingStatus)
+                                         .ToArray();
+
+                var getProductVariances = variances
+                    .Select(async p =>
+                    {
+                        try
+                        {
+                            var details = await httpClient.GetProductDetailAsync(p.Uri, cancellationToken);
+
+                            p.CurrentPrice = details.CurrentPrice;
+                            p.OriginalPrice = details.OriginalPrice;
+                            p.UpdatedOn = DateTime.Now;
+                            p.Status = ProductStatus.Completed.ToString();
+                        }
+                        catch (Exception e)
+                        {
+                            p.Errors = e.Message + e.StackTrace;
+                        }
+
+                        lock (Locker)
+                        {
+                            dbContext.SaveChanges();
+                        }
+
+                        return p;
+                    })
+                    .ToArray();
+
+                await Task.WhenAll(getProductVariances);
             }
         }
     }

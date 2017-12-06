@@ -14,6 +14,8 @@ namespace EagleEye.Extractor.Console.Models
 
         public DbSet<Product> Products { get; set; }
 
+        public DbSet<ProductVariance> ProductVariances { get; set; }
+
         //public DbSet<ProductDetail> ProductDetails { get; set; }
 
         public ApplicationDbContext(DbContextOptions<ApplicationDbContext> options) : base(options)
