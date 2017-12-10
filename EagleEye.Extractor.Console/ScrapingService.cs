@@ -25,6 +25,8 @@ namespace EagleEye.Extractor.Console
         {
             using (var dbContext = _serviceProvider.GetService<ApplicationDbContext>())
             {
+                Log.Information("Rebuilding Database");
+
                 await dbContext.Database.EnsureDeletedAsync(cancellationToken);
                 await dbContext.Database.EnsureCreatedAsync(cancellationToken);
             }
@@ -127,6 +129,8 @@ namespace EagleEye.Extractor.Console
             using (var dbContext = _serviceProvider.GetService<ApplicationDbContext>())
             using (var httpClient = _serviceProvider.GetService<AmazonHttpClient>())
             {
+                Log.Information("Updating Product Details");
+
                 var pendingStatus = ProductStatus.Pending.ToString();
 
                 var products = dbContext.Products
@@ -198,6 +202,8 @@ namespace EagleEye.Extractor.Console
             using (var dbContext = _serviceProvider.GetService<ApplicationDbContext>())
             using (var httpClient = _serviceProvider.GetService<AmazonHttpClient>())
             {
+                Log.Information("Updating Product Variances");
+
                 var pendingStatus = ProductStatus.Pending.ToString();
 
                 var variances = dbContext.ProductVariances

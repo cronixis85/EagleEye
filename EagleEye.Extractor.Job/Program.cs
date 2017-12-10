@@ -31,7 +31,7 @@ namespace EagleEye.Extractor.Job
 
             Environment.SetEnvironmentVariable("AzureWebJobsDashboard", configurations.GetConnectionString("AzureWebJobsDashboard"));
             Environment.SetEnvironmentVariable("AzureWebJobsStorage", configurations.GetConnectionString("AzureWebJobsStorage"));
-            
+
             var host = new JobHost(new JobHostConfiguration
             {
                 JobActivator = new CustomJobActivator(services),
@@ -40,6 +40,9 @@ namespace EagleEye.Extractor.Job
             });
 
             host.RunAndBlock();
+
+            //var s = services.GetService<WebJobMethods>();
+            //s.ProcessQueueMessage("test", null).Wait();
         }
     }
 
