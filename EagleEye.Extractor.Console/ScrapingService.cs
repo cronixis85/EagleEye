@@ -1,16 +1,10 @@
 ﻿using System;
-using System.IO;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using EagleEye.Extractor.Amazon;
-using EagleEye.Extractor.Amazon.Handlers;
 using EagleEye.Extractor.Console.Extensions;
 using EagleEye.Extractor.Console.Models;
-using EagleEye.Extractor.Extensions;
-using EagleEye.Extractor.Tesseract;
-using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Newtonsoft.Json;
 using Serilog;
@@ -20,91 +14,26 @@ namespace EagleEye.Extractor.Console
     public class ScrapingService
     {
         private static readonly object Locker = new object();
+        private readonly IServiceProvider _serviceProvider;
 
-        private static IConfigurationRoot Configuration { get; set; }
-
-        public void Run()
+        public ScrapingService(IServiceProvider serviceProvider)
         {
-            var builder = new ConfigurationBuilder()
-                .SetBasePath(Directory.GetCurrentDirectory())
-                .AddJsonFile("appsettings.json");
-
-            Configuration = builder.Build();
-
-            // setup logging
-            Log.Logger = new LoggerConfiguration()
-                .WriteTo.LiterateConsole()
-                .WriteTo.RollingFile(@"logs\EagleEye.Console-{Date}.txt")
-                .CreateLogger();
-
-            // setup our DI
-            var services = new ServiceCollection()
-                .AddLogging()
-                .AddDbContext<ApplicationDbContext>(options =>
-                        options.UseSqlServer(Configuration.GetConnectionString("EagleEyeDb")),
-                    ServiceLifetime.Transient)
-                .AddSingleton(_ => new ScrapeSettings
-                {
-                    RebuildDatabase = Convert.ToBoolean(Configuration["ScrapeSettings:RebuildDatabase"]),
-                    UpdateDepartments = Convert.ToBoolean(Configuration["ScrapeSettings:UpdateDepartments"]),
-                    UpdateCategories = Convert.ToBoolean(Configuration["ScrapeSettings:UpdateCategories"]),
-                    UpdateProducts = Convert.ToBoolean(Configuration["ScrapeSettings:UpdateProducts"]),
-                    UpdateProductDetails = Convert.ToBoolean(Configuration["ScrapeSettings:UpdateProductDetails"]),
-                    UpdateProductVariances = Convert.ToBoolean(Configuration["ScrapeSettings:UpdateProductVariances"])
-                })
-                .AddSingleton(_ => new RunPythonTesseract(
-                    Configuration["Tesseract:Python:Path"],
-                    Configuration["Tesseract:Python:CaptchaSolvePath"]))
-                .AddSingleton(_ => new RunDotNetTesseract(Configuration["Tesseract:Path"]))
-                .AddTransient(_ =>
-                {
-                    var pipeline = new DefaultHandler()
-                        .DecorateWith(new LoggingHandler(Log.Logger));
-
-                    return new AmazonHttpClient(pipeline)
-                    {
-                        TesseractService = _.GetService<RunDotNetTesseract>()
-                    };
-                })
-                .BuildServiceProvider();
-
-            var settings = services.GetService<ScrapeSettings>();
-            var cts = new CancellationTokenSource();
-
-            if (settings.RebuildDatabase)
-                RebuildDatabase(services);
-
-            if (settings.UpdateDepartments)
-                UpdateDepartmentalSectionsAsync(services, cts.Token).Wait(cts.Token);
-
-            if (settings.UpdateCategories)
-                UpdateCategoriesAsync(services, cts.Token).Wait(cts.Token);
-
-            if (settings.UpdateProducts)
-                UpdateProductsAsync(services, cts.Token).Wait(cts.Token);
-
-            if (settings.UpdateProductDetails)
-                UpdateProductsDetailsAsync(services, cts.Token).Wait(cts.Token);
-
-            if (settings.UpdateProductVariances)
-                UpdateProductVariancesAsync(services, cts.Token).Wait(cts.Token);
-
-            Log.CloseAndFlush();
+            _serviceProvider = serviceProvider;
         }
 
-        private void RebuildDatabase(IServiceProvider services)
+        public async Task RebuildDatabaseAsync(CancellationToken cancellationToken)
         {
-            using (var dbContext = services.GetService<ApplicationDbContext>())
+            using (var dbContext = _serviceProvider.GetService<ApplicationDbContext>())
             {
-                dbContext.Database.EnsureDeleted();
-                dbContext.Database.EnsureCreated();
+                await dbContext.Database.EnsureDeletedAsync(cancellationToken);
+                await dbContext.Database.EnsureCreatedAsync(cancellationToken);
             }
         }
 
-        private async Task UpdateDepartmentalSectionsAsync(IServiceProvider services, CancellationToken cancellationToken)
+        public async Task UpdateDepartmentalSectionsAsync(CancellationToken cancellationToken)
         {
-            using (var dbContext = services.GetService<ApplicationDbContext>())
-            using (var httpClient = services.GetService<AmazonHttpClient>())
+            using (var dbContext = _serviceProvider.GetService<ApplicationDbContext>())
+            using (var httpClient = _serviceProvider.GetService<AmazonHttpClient>())
             {
                 Log.Information("Getting Departments and Sections");
 
@@ -118,10 +47,10 @@ namespace EagleEye.Extractor.Console
             }
         }
 
-        private async Task UpdateCategoriesAsync(IServiceProvider services, CancellationToken cancellationToken)
+        public async Task UpdateCategoriesAsync(CancellationToken cancellationToken)
         {
-            using (var dbContext = services.GetService<ApplicationDbContext>())
-            using (var httpClient = services.GetService<AmazonHttpClient>())
+            using (var dbContext = _serviceProvider.GetService<ApplicationDbContext>())
+            using (var httpClient = _serviceProvider.GetService<AmazonHttpClient>())
             {
                 Log.Information("Updating Categories");
 
@@ -154,10 +83,10 @@ namespace EagleEye.Extractor.Console
             }
         }
 
-        private async Task UpdateProductsAsync(IServiceProvider services, CancellationToken cancellationToken)
+        public async Task UpdateProductsAsync(CancellationToken cancellationToken)
         {
-            using (var dbContext = services.GetService<ApplicationDbContext>())
-            using (var httpClient = services.GetService<AmazonHttpClient>())
+            using (var dbContext = _serviceProvider.GetService<ApplicationDbContext>())
+            using (var httpClient = _serviceProvider.GetService<AmazonHttpClient>())
             {
                 Log.Information("Updating Products");
 
@@ -193,10 +122,10 @@ namespace EagleEye.Extractor.Console
             }
         }
 
-        private async Task UpdateProductsDetailsAsync(IServiceProvider services, CancellationToken cancellationToken)
+        public async Task UpdateProductsDetailsAsync(CancellationToken cancellationToken)
         {
-            using (var dbContext = services.GetService<ApplicationDbContext>())
-            using (var httpClient = services.GetService<AmazonHttpClient>())
+            using (var dbContext = _serviceProvider.GetService<ApplicationDbContext>())
+            using (var httpClient = _serviceProvider.GetService<AmazonHttpClient>())
             {
                 var pendingStatus = ProductStatus.Pending.ToString();
 
@@ -264,10 +193,10 @@ namespace EagleEye.Extractor.Console
             }
         }
 
-        private async Task UpdateProductVariancesAsync(IServiceProvider services, CancellationToken cancellationToken)
+        public async Task UpdateProductVariancesAsync(CancellationToken cancellationToken)
         {
-            using (var dbContext = services.GetService<ApplicationDbContext>())
-            using (var httpClient = services.GetService<AmazonHttpClient>())
+            using (var dbContext = _serviceProvider.GetService<ApplicationDbContext>())
+            using (var httpClient = _serviceProvider.GetService<AmazonHttpClient>())
             {
                 var pendingStatus = ProductStatus.Pending.ToString();
 

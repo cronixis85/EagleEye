@@ -2,7 +2,7 @@
 
 namespace EagleEye.Extractor.Console.Models
 {
-    internal class ApplicationDbContext : DbContext
+    public class ApplicationDbContext : DbContext
     {
         public DbSet<Department> Departments { get; set; }
 

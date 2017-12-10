@@ -1,8 +1,13 @@
 ﻿using System;
 using System.IO;
+using EagleEye.Extractor.Console.Extensions;
+using EagleEye.Extractor.Console.Models;
 using Microsoft.Azure.WebJobs;
+using Microsoft.Azure.WebJobs.Host;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection.Extensions;
 
 namespace EagleEye.Extractor.Job
 {
@@ -10,34 +15,47 @@ namespace EagleEye.Extractor.Job
     {
         private static void Main(string[] args)
         {
-            var config = new JobHostConfiguration();
-
-            if (config.IsDevelopment)
-                config.UseDevelopmentSettings();
-
-            var host = new JobHost(config);
-            host.RunAndBlock();
-        }
-        private static void ConfigureServices(IServiceCollection serviceCollection)
-        {
-            // Setup your container here, just like a asp.net core app
-
-            // Optional: Setup your configuration:
-            var configuration = new ConfigurationBuilder()
+            var configurations = new ConfigurationBuilder()
                 .SetBasePath(Directory.GetCurrentDirectory())
                 .AddJsonFile("appsettings.json", optional: false, reloadOnChange: true)
                 .Build();
 
-            //serviceCollection.Configure<MySettings>(configuration);
+            // Your classes that contain the webjob methods need to be DI-ed up too
+            var services = new ServiceCollection()
+                .AddDbContext<ApplicationDbContext>(options =>
+                        options.UseSqlServer(configurations.GetConnectionString("EagleEyeDb")),
+                    ServiceLifetime.Transient)
+                .AddScrapingOptions(configurations)
+                .AddTransient<WebJobMethods>()
+                .BuildServiceProvider();
 
-            //// A silly example of wiring up some class used by the web job:
-            //serviceCollection.AddScoped<ISomeInterface, SomeUsefulClass>();
-            //// Your classes that contain the webjob methods need to be DI-ed up too
-            //serviceCollection.AddScoped<WebJobsMethods, WebJobsMethods>();
+            Environment.SetEnvironmentVariable("AzureWebJobsDashboard", configurations.GetConnectionString("AzureWebJobsDashboard"));
+            Environment.SetEnvironmentVariable("AzureWebJobsStorage", configurations.GetConnectionString("AzureWebJobsStorage"));
+            
+            var host = new JobHost(new JobHostConfiguration()
+            {
+                JobActivator = new CustomJobActivator(services),
+                //DashboardConnectionString = configuration.GetConnectionString("AzureWebJobsDashboard"),
+                //StorageConnectionString = configuration.GetConnectionString("AzureWebJobsStorage")
+            });
 
-            // One more thing - tell azure where your azure connection strings are
-            Environment.SetEnvironmentVariable("AzureWebJobsDashboard", configuration.GetConnectionString("WebJobsDashboard"));
-            Environment.SetEnvironmentVariable("AzureWebJobsStorage", configuration.GetConnectionString("WebJobsStorage"));
+            host.RunAndBlock();
+        }
+    }
+
+    public class CustomJobActivator : IJobActivator
+    {
+        private readonly IServiceProvider _service;
+
+        public CustomJobActivator(IServiceProvider service)
+        {
+            _service = service;
+        }
+
+        public T CreateInstance<T>()
+        {
+            var service = _service.GetService<T>();
+            return service;
         }
     }
 }

@@ -1,10 +1,55 @@
-﻿namespace EagleEye.Extractor.Console
+﻿using System.IO;
+using System.Threading;
+using EagleEye.Extractor.Console.Extensions;
+using EagleEye.Extractor.Console.Models;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
+using Serilog;
+
+namespace EagleEye.Extractor.Console
 {
     internal class Program
     {
         public static void Main(string[] args)
         {
-            new ScrapingService().Run();
+            var builder = new ConfigurationBuilder()
+                .SetBasePath(Directory.GetCurrentDirectory())
+                .AddJsonFile("appsettings.json", false, true);
+
+            var config = builder.Build();
+
+            // setup our DI
+            var services = new ServiceCollection()
+                .AddDbContext<ApplicationDbContext>(options =>
+                        options.UseSqlServer(config.GetConnectionString("EagleEyeDb")),
+                    ServiceLifetime.Transient)
+                .AddScrapingOptions(config)
+                .BuildServiceProvider();
+
+            var settings = services.GetService<ScrapeSettings>();
+            var scrapingService = services.GetService<ScrapingService>();
+            var cts = new CancellationTokenSource();
+            
+            if (settings.RebuildDatabase)
+                scrapingService.RebuildDatabaseAsync(cts.Token).Wait(cts.Token);
+
+            if (settings.UpdateDepartments)
+                scrapingService.UpdateDepartmentalSectionsAsync(cts.Token).Wait(cts.Token);
+
+            if (settings.UpdateCategories)
+                scrapingService.UpdateCategoriesAsync(cts.Token).Wait(cts.Token);
+
+            if (settings.UpdateProducts)
+                scrapingService.UpdateProductsAsync(cts.Token).Wait(cts.Token);
+
+            if (settings.UpdateProductDetails)
+                scrapingService.UpdateProductsDetailsAsync(cts.Token).Wait(cts.Token);
+
+            if (settings.UpdateProductVariances)
+                scrapingService.UpdateProductVariancesAsync(cts.Token).Wait(cts.Token);
+
+            Log.CloseAndFlush();
         }
     }
 }
