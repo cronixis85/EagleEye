@@ -1,5 +1,4 @@
-﻿using System;
-using System.IO;
+﻿using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
 using EagleEye.Extractor.Console;
@@ -9,8 +8,8 @@ namespace EagleEye.Extractor.Job
 {
     public class WebJobMethods
     {
-        private readonly ScrapeSettings _settings;
         private readonly ScrapingService _scrapingService;
+        private readonly ScrapeSettings _settings;
 
         public WebJobMethods(ScrapeSettings settings, ScrapingService scrapingService)
         {

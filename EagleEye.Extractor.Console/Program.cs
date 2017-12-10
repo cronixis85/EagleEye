@@ -16,7 +16,7 @@ namespace EagleEye.Extractor.Console
             var builder = new ConfigurationBuilder()
                 .SetBasePath(Directory.GetCurrentDirectory())
                 .AddJsonFile("appsettings.json", false, true);
-
+            
             var config = builder.Build();
 
             // setup our DI

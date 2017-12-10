@@ -7,7 +7,6 @@ using Microsoft.Azure.WebJobs.Host;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.DependencyInjection.Extensions;
 
 namespace EagleEye.Extractor.Job
 {
@@ -15,10 +14,11 @@ namespace EagleEye.Extractor.Job
     {
         private static void Main(string[] args)
         {
-            var configurations = new ConfigurationBuilder()
+            var builder = new ConfigurationBuilder()
                 .SetBasePath(Directory.GetCurrentDirectory())
-                .AddJsonFile("appsettings.json", optional: false, reloadOnChange: true)
-                .Build();
+                .AddJsonFile("appsettings.json", optional: false, reloadOnChange: true);
+
+            var configurations = builder.Build();
 
             // Your classes that contain the webjob methods need to be DI-ed up too
             var services = new ServiceCollection()
@@ -32,7 +32,7 @@ namespace EagleEye.Extractor.Job
             Environment.SetEnvironmentVariable("AzureWebJobsDashboard", configurations.GetConnectionString("AzureWebJobsDashboard"));
             Environment.SetEnvironmentVariable("AzureWebJobsStorage", configurations.GetConnectionString("AzureWebJobsStorage"));
             
-            var host = new JobHost(new JobHostConfiguration()
+            var host = new JobHost(new JobHostConfiguration
             {
                 JobActivator = new CustomJobActivator(services),
                 //DashboardConnectionString = configuration.GetConnectionString("AzureWebJobsDashboard"),
