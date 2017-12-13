@@ -27,11 +27,15 @@ namespace EagleEye.Extractor.Tesseract
 
         public async Task<string> ExecuteAsync(byte[] data)
         {
+            // split characters in captcha image
             var sprites = new SplitCaptchaWithOpenCv().Execute(data);
 
+            var batchId = DateTime.Now.Ticks;
+
+            // solve each sprite
             var tasks = sprites.Select(async (x, i) =>
             {
-                var result = await ExecuteSingleSpriteAsync(x);
+                var result = await ExecuteSingleSpriteAsync(x, $"{batchId}_{i}".ToString());
                 return new {Index = i, CaptchaText = result};
             }).ToArray();
 
@@ -48,13 +52,12 @@ namespace EagleEye.Extractor.Tesseract
             return text.ToUpper().Replace(".", string.Empty);
         }
 
-        private async Task<string> ExecuteSingleSpriteAsync(byte[] data)
+        private async Task<string> ExecuteSingleSpriteAsync(byte[] data, string uniqueId)
         {
             if (data?.Length == 0)
                 throw new ArgumentNullException(nameof(data));
-
-            var ticks = DateTime.Now.Ticks;
-            var filePath = Path.Combine(_tempDir, ticks + ".jpg");
+            
+            var filePath = Path.Combine(_tempDir, uniqueId + ".jpg");
 
             try
             {

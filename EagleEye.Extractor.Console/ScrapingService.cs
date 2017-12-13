@@ -135,7 +135,6 @@ namespace EagleEye.Extractor.Console
 
                 var products = dbContext.Products
                                         .Where(x => x.Status == pendingStatus)
-                                        .Take(500)
                                         .ToArray();
 
                 var getProductDetailTasks = products
