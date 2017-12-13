@@ -1,5 +1,6 @@
 ﻿using System;
 using System.IO;
+using System.Linq;
 using EagleEye.Extractor.Console.Extensions;
 using EagleEye.Extractor.Console.Models;
 using Microsoft.Azure.WebJobs;
@@ -16,6 +17,11 @@ namespace EagleEye.Extractor.Job
     {
         private static void Main(string[] args)
         {
+            // print env variables
+            //var env = Environment.GetEnvironmentVariables();
+            //Log.Information("Envrionment Variables:");
+            //Log.Information(JsonConvert.SerializeObject(env));
+
             var builder = new ConfigurationBuilder()
                 .SetBasePath(Directory.GetCurrentDirectory())
                 .AddJsonFile("appsettings.json", false, true)
@@ -31,10 +37,11 @@ namespace EagleEye.Extractor.Job
                 .AddTransient<WebJobMethods>()
                 .BuildServiceProvider();
 
-            // print env variables
-            var env = Environment.GetEnvironmentVariables();
-            Log.Information("Envrionment Variables:");
-            Log.Information(JsonConvert.SerializeObject(env));
+            Log.Information("App Settings & Environment Variables:");
+            foreach (var child in configurations.GetChildren().OrderBy(x => x.Key))
+            {
+                Log.Information($"{child.Key} = {child.Value}");
+            }
 
             var host = new JobHost(new JobHostConfiguration
             {
