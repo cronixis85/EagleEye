@@ -15,27 +15,31 @@ namespace EagleEye.Extractor.Console.Extensions
         {
             if (services == null)
                 throw new ArgumentNullException(nameof(services));
+            
+            var loggingConfiguration = 
+                new LoggerConfiguration()
+                    .WriteTo.LiterateConsole();
 
-            Log.Logger = new LoggerConfiguration()
-                .WriteTo.LiterateConsole()
-                .WriteTo.RollingFile(@"logs\EagleEye.Console-{Date}.txt")
-                .CreateLogger();
+            if (Convert.ToBoolean(config["APPSETTING_Logging_EnableRollingFile"]))
+                loggingConfiguration.WriteTo.RollingFile(@"logs\EagleEye.Job-{Date}.txt");
+
+            Log.Logger = loggingConfiguration.CreateLogger();
 
             services
                 .AddLogging()
                 .AddSingleton(_ => new ScrapeSettings
                 {
-                    RebuildDatabase = Convert.ToBoolean(config["ScrapeSettings:RebuildDatabase"]),
-                    UpdateDepartments = Convert.ToBoolean(config["ScrapeSettings:UpdateDepartments"]),
-                    UpdateCategories = Convert.ToBoolean(config["ScrapeSettings:UpdateCategories"]),
-                    UpdateProducts = Convert.ToBoolean(config["ScrapeSettings:UpdateProducts"]),
-                    UpdateProductDetails = Convert.ToBoolean(config["ScrapeSettings:UpdateProductDetails"]),
-                    UpdateProductVariances = Convert.ToBoolean(config["ScrapeSettings:UpdateProductVariances"])
+                    RebuildDatabase = Convert.ToBoolean(config["APPSETTING_ScrapeSettings_RebuildDatabase"]),
+                    UpdateDepartments = Convert.ToBoolean(config["APPSETTING_ScrapeSettings_UpdateDepartments"]),
+                    UpdateCategories = Convert.ToBoolean(config["APPSETTING_ScrapeSettings_UpdateCategories"]),
+                    UpdateProducts = Convert.ToBoolean(config["APPSETTING_ScrapeSettings_UpdateProducts"]),
+                    UpdateProductDetails = Convert.ToBoolean(config["APPSETTING_ScrapeSettings_UpdateProductDetails"]),
+                    UpdateProductVariances = Convert.ToBoolean(config["APPSETTING_ScrapeSettings_UpdateProductVariances"])
                 })
                 .AddSingleton(_ => new RunPythonTesseract(
-                    config["Tesseract:Python:Path"],
-                    config["Tesseract:Python:CaptchaSolvePath"]))
-                .AddSingleton(_ => new RunDotNetTesseract(config["Tesseract:Path"]))
+                    config["APPSETTING_Tesseract_Python_Path"],
+                    config["APPSETTING_Tesseract_Python_CaptchaSolvePath"]))
+                .AddSingleton(_ => new RunDotNetTesseract(config["APPSETTING_Tesseract_Path"], config["APPSETTING_Tesseract_TempDir"]))
                 .AddTransient(_ =>
                 {
                     var pipeline = new DefaultHandler()

@@ -7,6 +7,8 @@ using Microsoft.Azure.WebJobs.Host;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Newtonsoft.Json;
+using Serilog;
 
 namespace EagleEye.Extractor.Job
 {
@@ -16,33 +18,39 @@ namespace EagleEye.Extractor.Job
         {
             var builder = new ConfigurationBuilder()
                 .SetBasePath(Directory.GetCurrentDirectory())
-                .AddJsonFile("appsettings.json", optional: false, reloadOnChange: true);
+                .AddJsonFile("appsettings.json", false, true)
+                .AddEnvironmentVariables();
+            //.AddJsonFile($"appsettings.{env.EnvironmentName}.json", optional: true, reloadOnChange: true);
 
             var configurations = builder.Build();
 
             // Your classes that contain the webjob methods need to be DI-ed up too
             var services = new ServiceCollection()
-                .AddDbContext<ApplicationDbContext>(options =>
-                        options.UseSqlServer(configurations.GetConnectionString("EagleEyeDb")),
-                    ServiceLifetime.Transient)
+                .AddDbContext<ApplicationDbContext>(options => options.UseSqlServer(configurations["SQLAZURECONNSTR_EagleEyeDb"]), ServiceLifetime.Transient)
                 .AddScrapingOptions(configurations)
                 .AddTransient<WebJobMethods>()
                 .BuildServiceProvider();
 
-            Environment.SetEnvironmentVariable("AzureWebJobsDashboard", configurations.GetConnectionString("AzureWebJobsDashboard"));
-            Environment.SetEnvironmentVariable("AzureWebJobsStorage", configurations.GetConnectionString("AzureWebJobsStorage"));
+            // print env variables
+            var env = Environment.GetEnvironmentVariables();
+            Log.Information("Envrionment Variables:");
+            Log.Information(JsonConvert.SerializeObject(env));
 
             var host = new JobHost(new JobHostConfiguration
             {
+                DashboardConnectionString = configurations["APPSETTING_AzureWebJobsDashboard"],
+                StorageConnectionString = configurations["APPSETTING_AzureWebJobsStorage"],
                 JobActivator = new CustomJobActivator(services),
-                //DashboardConnectionString = configuration.GetConnectionString("AzureWebJobsDashboard"),
-                //StorageConnectionString = configuration.GetConnectionString("AzureWebJobsStorage")
+                Queues =
+                {
+                    MaxDequeueCount = 1,
+                    BatchSize = 1,
+                    MaxPollingInterval = TimeSpan.FromSeconds(30),
+                    NewBatchThreshold = 1
+                }
             });
 
             host.RunAndBlock();
-
-            //var s = services.GetService<WebJobMethods>();
-            //s.ProcessQueueMessage("test", null).Wait();
         }
     }
 

@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
@@ -10,13 +9,20 @@ namespace EagleEye.Extractor.Tesseract
     public class RunDotNetTesseract
     {
         private const string Config = @"stdout -c tessedit_char_whitelist=ABCDEFGHIJKLMNOPQRSTUVWXYZ --psm 7";
-        private const string TempDir = ".tmp";
+        private readonly string _tempDir;
         private readonly string _tesseractPath;
 
-        public RunDotNetTesseract(string tesseractPath)
+        public RunDotNetTesseract(string tesseractPath, string tempDir)
         {
+            if (string.IsNullOrEmpty(tesseractPath))
+                throw new ArgumentNullException(nameof(tesseractPath));
+
+            if (string.IsNullOrEmpty(tempDir))
+                throw new ArgumentNullException(nameof(tempDir));
+
             _tesseractPath = tesseractPath;
-            EnsureDirectoryExist(TempDir);
+            _tempDir = tempDir;
+            EnsureDirectoryExist(tempDir);
         }
 
         public async Task<string> ExecuteAsync(byte[] data)
@@ -26,7 +32,7 @@ namespace EagleEye.Extractor.Tesseract
             var tasks = sprites.Select(async (x, i) =>
             {
                 var result = await ExecuteSingleSpriteAsync(x);
-                return new { Index = i, CaptchaText = result };
+                return new {Index = i, CaptchaText = result};
             }).ToArray();
 
             await Task.WhenAll(tasks);
@@ -44,8 +50,11 @@ namespace EagleEye.Extractor.Tesseract
 
         private async Task<string> ExecuteSingleSpriteAsync(byte[] data)
         {
+            if (data?.Length == 0)
+                throw new ArgumentNullException(nameof(data));
+
             var ticks = DateTime.Now.Ticks;
-            var filePath = Path.Combine(TempDir, ticks + ".jpg");
+            var filePath = Path.Combine(_tempDir, ticks + ".jpg");
 
             try
             {
