@@ -15,10 +15,11 @@ namespace EagleEye.Extractor.Amazon
     public partial class AmazonHttpClient : HttpClient
     {
         private static readonly SemaphoreSlim Semaphore = new SemaphoreSlim(5);
+        private static readonly int SemaphoreMaxWaitTimeInHrs = 6;
         private static readonly Uri BaseUri = new Uri("https://www.amazon.com");
         private static readonly Uri SiteDirectoryUri = new Uri("/gp/site-directory/", UriKind.Relative);
         private static readonly Uri ValidateCaptcha = new Uri("/errors/validateCaptcha", UriKind.Relative);
-
+        
         public RunDotNetTesseract TesseractService { get; set; }
 
         public AmazonHttpClient() : this(new HttpClientHandler())
@@ -71,7 +72,6 @@ namespace EagleEye.Extractor.Amazon
                 : productUri.OriginalString;
 
             if (details.Variances?.Count > 0)
-            {
                 foreach (var variance in details.Variances)
                 {
                     // https://www.amazon.com/Sockwell-Compression-Socks-Ideal-Travel-Sports-Prolonged-Sitting-Standing/dp/B00OUP6JQA/ref=lp_9590791011_1_26?s=sports-and-fitness-clothing&amp;ie=UTF8&amp;qid=1512275962&amp;sr=1-26
@@ -82,20 +82,18 @@ namespace EagleEye.Extractor.Amazon
 
                     variance.Url = url;
                 }
-            }
 
             Log.Information("{Uri}: Completed", productUri);
 
             return details;
         }
 
-
         private async Task<AmazonResponseResult> GetAsyncAsHtmlDocWithEnsureAllowed(Uri uri, CancellationToken cancellationToken)
         {
+            await Semaphore.WaitAsync(TimeSpan.FromHours(SemaphoreMaxWaitTimeInHrs), cancellationToken);
+
             try
             {
-                await Semaphore.WaitAsync(TimeSpan.FromHours(1), cancellationToken);
-
                 var success = true;
                 AmazonResponseResult result = null;
 
@@ -108,21 +106,21 @@ namespace EagleEye.Extractor.Amazon
                     }
                     catch (EncounterCaptchaException e)
                     {
-                        Log.Information("{Uri}: Encounter Captcha", uri);
-
                         success = false;
-                        await new SolveCaptcha(this, uri).ExecuteAsync(e.HtmlDocument, cancellationToken);
-                    }
-                    catch (Exception e)
-                    {
-                        success = false;
-                        Log.Error(e.StackTrace);
-                        throw;
-                    }
 
+                        Log.Information("{Uri}: Encounter Captcha", e.Uri);
+
+                        // ensures it will be solved
+                        new SolveCaptcha(this, e.Uri).ExecuteAsync(e.HtmlDocument, cancellationToken).RunSynchronously();
+                    }
                 } while (!success);
 
                 return result;
+            }
+            catch (Exception e)
+            {
+                Log.Error(e.StackTrace);
+                throw;
             }
             finally
             {
@@ -154,7 +152,7 @@ namespace EagleEye.Extractor.Amazon
                     var title = new ExtractTitle().Execute(result.HtmlDocument);
 
                     if (title != null && title.Contains("Robot Check"))
-                        throw new EncounterCaptchaException("Amazon has blocked scraper.", result.HtmlDocument);
+                        throw new EncounterCaptchaException("Amazon has blocked scraper.", uri, result.HtmlDocument);
 
                     return result;
                 }
@@ -163,9 +161,6 @@ namespace EagleEye.Extractor.Amazon
             }
         }
 
-        private static readonly object CaptchLock = new object();
-
-        
 
         private class AmazonResponseResult
         {

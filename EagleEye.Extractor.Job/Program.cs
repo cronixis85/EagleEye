@@ -22,13 +22,11 @@ namespace EagleEye.Extractor.Job
             //Log.Information("Envrionment Variables:");
             //Log.Information(JsonConvert.SerializeObject(env));
 
-            var builder = new ConfigurationBuilder()
+            var configurations = new ConfigurationBuilder()
                 .SetBasePath(Directory.GetCurrentDirectory())
                 .AddJsonFile("appsettings.json", false, true)
-                .AddEnvironmentVariables();
-            //.AddJsonFile($"appsettings.{env.EnvironmentName}.json", optional: true, reloadOnChange: true);
-
-            var configurations = builder.Build();
+                .AddEnvironmentVariables()
+                .Build();
 
             // Your classes that contain the webjob methods need to be DI-ed up too
             var services = new ServiceCollection()
