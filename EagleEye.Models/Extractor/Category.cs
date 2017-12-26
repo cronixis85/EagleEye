@@ -1,7 +1,7 @@
 ﻿using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations.Schema;
 
-namespace EagleEye.Extractor.Console.Models
+namespace EagleEye.Models.Extractor
 {
     public class Category
     {

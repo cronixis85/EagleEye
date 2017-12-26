@@ -1,0 +1,8 @@
+{
+  "RebuildDatabase": true,
+  "UpdateDepartments": true,
+  "UpdateCategories": true,
+  "UpdateProducts": true,
+  "UpdateProductDetails": false,
+  "UpdateProductVariances": false
+}

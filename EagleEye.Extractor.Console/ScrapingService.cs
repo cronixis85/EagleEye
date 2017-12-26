@@ -4,7 +4,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using EagleEye.Extractor.Amazon;
 using EagleEye.Extractor.Console.Extensions;
-using EagleEye.Extractor.Console.Models;
+using EagleEye.Models.Extractor;
 using Microsoft.Extensions.DependencyInjection;
 using Newtonsoft.Json;
 using Serilog;
@@ -21,7 +21,30 @@ namespace EagleEye.Extractor.Console
             _serviceProvider = serviceProvider;
         }
 
-        public async Task RebuildDatabaseAsync(CancellationToken cancellationToken)
+        public async Task RunAsync(ScrapeSettings settings, CancellationTokenSource cts)
+        {
+            Log.Information("ScrapeSettings = {Settings}", JsonConvert.SerializeObject(settings));
+
+            if (settings.RebuildDatabase)
+                await RebuildDatabaseAsync(cts.Token);
+
+            if (settings.UpdateDepartments)
+                await UpdateDepartmentalSectionsAsync(cts.Token);
+
+            if (settings.UpdateCategories)
+                await UpdateCategoriesAsync(cts.Token);
+
+            if (settings.UpdateProducts)
+                await UpdateProductsAsync(cts.Token);
+
+            if (settings.UpdateProductDetails)
+                await UpdateProductsDetailsAsync(cts.Token);
+
+            if (settings.UpdateProductVariances)
+                await UpdateProductVariancesAsync(cts.Token);
+        }
+
+        private async Task RebuildDatabaseAsync(CancellationToken cancellationToken)
         {
             using (var dbContext = _serviceProvider.GetService<ApplicationDbContext>())
             {
@@ -32,16 +55,18 @@ namespace EagleEye.Extractor.Console
             }
         }
 
-        public async Task UpdateDepartmentalSectionsAsync(CancellationToken cancellationToken)
+        private async Task UpdateDepartmentalSectionsAsync(CancellationToken cancellationToken)
         {
             using (var dbContext = _serviceProvider.GetService<ApplicationDbContext>())
             using (var httpClient = _serviceProvider.GetService<AmazonHttpClient>())
             {
                 Log.Information("Getting Departments and Sections");
-
-                var amzDepartments = await httpClient.GetDepartmentalSectionsAsync(cancellationToken);
-
-                var depts = amzDepartments.ToDbDepartments().ToList();
+                
+                var found = await httpClient.GetDepartmentalSectionsAsync(cancellationToken);
+                
+                var depts = found
+                    .ToDbDepartments()
+                    .ToList();
 
                 // save department, sections
                 dbContext.Departments.AddRange(depts);
@@ -49,7 +74,7 @@ namespace EagleEye.Extractor.Console
             }
         }
 
-        public async Task UpdateCategoriesAsync(CancellationToken cancellationToken)
+        private async Task UpdateCategoriesAsync(CancellationToken cancellationToken)
         {
             using (var dbContext = _serviceProvider.GetService<ApplicationDbContext>())
             using (var httpClient = _serviceProvider.GetService<AmazonHttpClient>())
@@ -85,7 +110,7 @@ namespace EagleEye.Extractor.Console
             }
         }
 
-        public async Task UpdateProductsAsync(CancellationToken cancellationToken)
+        private async Task UpdateProductsAsync(CancellationToken cancellationToken)
         {
             using (var dbContext = _serviceProvider.GetService<ApplicationDbContext>())
             using (var httpClient = _serviceProvider.GetService<AmazonHttpClient>())
@@ -103,7 +128,36 @@ namespace EagleEye.Extractor.Console
 
                         if (amzProducts != null && amzProducts.Count > 0)
                         {
-                            x.Products = amzProducts.ToDbProducts().ToList();
+                            x.Products = amzProducts.Select(p =>
+                            {
+                                // set product details
+                                var pdt = new Product
+                                {
+                                    Url = p.Url,
+                                    Name = p.Name,
+                                    Brand = p.Brand,
+                                    Asin = p.Asin,
+                                    CurrentPrice = p.CurrentPrice,
+                                    OriginalPrice = p.OriginalPrice,
+                                    Dimensions = p.Dimensions,
+                                    ItemWeight = p.ItemWeight,
+                                    ShippingWeight = p.ShippingWeight,
+                                    Manufacturer = p.Manufacturer,
+                                    ModelNumber = p.ModelNumber,
+                                    Rating = p.Rating,
+                                    TotalReviews = p.TotalReviews,
+                                    FirstAvailableOn = p.FirstAvailableOn,
+                                    Errors = p.Errors,
+                                    Status = ProductStatus.Pending.ToString(),
+                                    CreatedOn = DateTime.Now
+                                };
+
+                                // set ranking 
+                                if (p.Rank != null)
+                                    pdt.SetRank(p.Rank);
+
+                                return pdt;
+                            }).ToList();
                             x.Enabled = true;
                         }
                         else
@@ -124,7 +178,7 @@ namespace EagleEye.Extractor.Console
             }
         }
 
-        public async Task UpdateProductsDetailsAsync(CancellationToken cancellationToken)
+        private async Task UpdateProductsDetailsAsync(CancellationToken cancellationToken)
         {
             using (var dbContext = _serviceProvider.GetService<ApplicationDbContext>())
             using (var httpClient = _serviceProvider.GetService<AmazonHttpClient>())
@@ -147,21 +201,24 @@ namespace EagleEye.Extractor.Console
                             p.Url = details.Url;
                             p.Name = details.Name;
                             p.Brand = details.Brand;
+                            p.Asin = details.Asin;
                             p.CurrentPrice = details.CurrentPrice;
                             p.OriginalPrice = details.OriginalPrice;
                             p.Dimensions = details.Dimensions;
                             p.ItemWeight = details.ItemWeight;
                             p.ShippingWeight = details.ShippingWeight;
                             p.Manufacturer = details.Manufacturer;
-                            p.Asin = details.Asin;
                             p.ModelNumber = details.ModelNumber;
                             p.Rating = details.Rating;
                             p.TotalReviews = details.TotalReviews;
                             p.FirstAvailableOn = details.FirstAvailableOn;
-                            p.Rank = JsonConvert.SerializeObject(details.Rank);
                             p.Errors = details.Errors;
-                            p.UpdatedOn = DateTime.Now;
                             p.Status = ProductStatus.Completed.ToString();
+                            p.UpdatedOn = DateTime.Now;
+
+                            // set ranking
+                            if (p.Rank != null)
+                                p.SetRank(details.Rank);
 
                             if (details.Variances?.Count > 0)
                             {
@@ -180,7 +237,7 @@ namespace EagleEye.Extractor.Console
                         }
                         catch (Exception e)
                         {
-                            p.Errors = e.Message + e.StackTrace;
+                            p.Errors += " " + e.Message + e.StackTrace;
                         }
 
                         lock (Locker)
@@ -196,7 +253,7 @@ namespace EagleEye.Extractor.Console
             }
         }
 
-        public async Task UpdateProductVariancesAsync(CancellationToken cancellationToken)
+        private async Task UpdateProductVariancesAsync(CancellationToken cancellationToken)
         {
             using (var dbContext = _serviceProvider.GetService<ApplicationDbContext>())
             using (var httpClient = _serviceProvider.GetService<AmazonHttpClient>())

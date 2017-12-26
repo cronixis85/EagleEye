@@ -16,6 +16,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\EagleEye.Extractor\EagleEye.Extractor.csproj" />
+    <ProjectReference Include="..\EagleEye.Models\EagleEye.Models.csproj" />
   </ItemGroup>
 
   <ItemGroup>

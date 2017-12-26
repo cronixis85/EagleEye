@@ -2,13 +2,12 @@
 using System.IO;
 using System.Linq;
 using EagleEye.Extractor.Console.Extensions;
-using EagleEye.Extractor.Console.Models;
+using EagleEye.Extractor.Job.Infrastructure;
+using EagleEye.Models.Extractor;
 using Microsoft.Azure.WebJobs;
-using Microsoft.Azure.WebJobs.Host;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
-using Newtonsoft.Json;
 using Serilog;
 
 namespace EagleEye.Extractor.Job
@@ -36,42 +35,27 @@ namespace EagleEye.Extractor.Job
                 .BuildServiceProvider();
 
             Log.Information("App Settings & Environment Variables:");
+
             foreach (var child in configurations.GetChildren().OrderBy(x => x.Key))
-            {
                 Log.Information($"{child.Key} = {child.Value}");
-            }
 
             var host = new JobHost(new JobHostConfiguration
             {
                 DashboardConnectionString = configurations["APPSETTING_AzureWebJobsDashboard"],
                 StorageConnectionString = configurations["APPSETTING_AzureWebJobsStorage"],
+                //NameResolver = new AppSettingQueueNameResolver(configurations),
                 JobActivator = new CustomJobActivator(services),
                 Queues =
                 {
                     MaxDequeueCount = 1,
                     BatchSize = 1,
-                    MaxPollingInterval = TimeSpan.FromSeconds(30),
-                    NewBatchThreshold = 1
+                    MaxPollingInterval = TimeSpan.FromSeconds(15),
+                    NewBatchThreshold = 1,
+                    VisibilityTimeout = TimeSpan.FromDays(1)
                 }
             });
 
             host.RunAndBlock();
-        }
-    }
-
-    public class CustomJobActivator : IJobActivator
-    {
-        private readonly IServiceProvider _service;
-
-        public CustomJobActivator(IServiceProvider service)
-        {
-            _service = service;
-        }
-
-        public T CreateInstance<T>()
-        {
-            var service = _service.GetService<T>();
-            return service;
         }
     }
 }

@@ -1,7 +1,7 @@
 ﻿using System.IO;
 using System.Threading;
 using EagleEye.Extractor.Console.Extensions;
-using EagleEye.Extractor.Console.Models;
+using EagleEye.Models.Extractor;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -27,25 +27,9 @@ namespace EagleEye.Extractor.Console
 
             var settings = services.GetService<ScrapeSettings>();
             var scrapingService = services.GetService<ScrapingService>();
-            var cts = new CancellationTokenSource();
-            
-            if (settings.RebuildDatabase)
-                scrapingService.RebuildDatabaseAsync(cts.Token).Wait(cts.Token);
+            var cts=  new CancellationTokenSource();
 
-            if (settings.UpdateDepartments)
-                scrapingService.UpdateDepartmentalSectionsAsync(cts.Token).Wait(cts.Token);
-
-            if (settings.UpdateCategories)
-                scrapingService.UpdateCategoriesAsync(cts.Token).Wait(cts.Token);
-
-            if (settings.UpdateProducts)
-                scrapingService.UpdateProductsAsync(cts.Token).Wait(cts.Token);
-
-            if (settings.UpdateProductDetails)
-                scrapingService.UpdateProductsDetailsAsync(cts.Token).Wait(cts.Token);
-
-            if (settings.UpdateProductVariances)
-                scrapingService.UpdateProductVariancesAsync(cts.Token).Wait(cts.Token);
+            scrapingService.RunAsync(settings, cts).Wait(cts.Token);
 
             Log.CloseAndFlush();
         }

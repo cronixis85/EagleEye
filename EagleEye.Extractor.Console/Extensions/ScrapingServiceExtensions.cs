@@ -27,15 +27,6 @@ namespace EagleEye.Extractor.Console.Extensions
 
             services
                 .AddLogging()
-                .AddSingleton(_ => new ScrapeSettings
-                {
-                    RebuildDatabase = Convert.ToBoolean(config["APPSETTING_ScrapeSettings_RebuildDatabase"]),
-                    UpdateDepartments = Convert.ToBoolean(config["APPSETTING_ScrapeSettings_UpdateDepartments"]),
-                    UpdateCategories = Convert.ToBoolean(config["APPSETTING_ScrapeSettings_UpdateCategories"]),
-                    UpdateProducts = Convert.ToBoolean(config["APPSETTING_ScrapeSettings_UpdateProducts"]),
-                    UpdateProductDetails = Convert.ToBoolean(config["APPSETTING_ScrapeSettings_UpdateProductDetails"]),
-                    UpdateProductVariances = Convert.ToBoolean(config["APPSETTING_ScrapeSettings_UpdateProductVariances"])
-                })
                 .AddSingleton(_ => new RunPythonTesseract(
                     config["APPSETTING_Tesseract_Python_Path"],
                     config["APPSETTING_Tesseract_Python_CaptchaSolvePath"]))

@@ -1,6 +1,6 @@
 ﻿using Microsoft.EntityFrameworkCore;
 
-namespace EagleEye.Extractor.Console.Models
+namespace EagleEye.Models.Extractor
 {
     public class ApplicationDbContext : DbContext
     {

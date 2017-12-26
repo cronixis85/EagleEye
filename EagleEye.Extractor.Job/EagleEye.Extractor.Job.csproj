@@ -13,6 +13,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\EagleEye.Extractor.Console\EagleEye.Extractor.Console.csproj" />
+    <ProjectReference Include="..\EagleEye.Models\EagleEye.Models.csproj" />
   </ItemGroup>
 
   <ItemGroup>

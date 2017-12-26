@@ -1,4 +1,4 @@
-﻿namespace EagleEye.Extractor.Console.Models
+﻿namespace EagleEye.Models.Extractor
 {
     public enum ProductStatus
     {

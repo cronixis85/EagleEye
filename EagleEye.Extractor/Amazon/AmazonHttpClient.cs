@@ -19,7 +19,10 @@ namespace EagleEye.Extractor.Amazon
         private static readonly Uri BaseUri = new Uri("https://www.amazon.com");
         private static readonly Uri SiteDirectoryUri = new Uri("/gp/site-directory/", UriKind.Relative);
         private static readonly Uri ValidateCaptcha = new Uri("/errors/validateCaptcha", UriKind.Relative);
-        
+        private static readonly object Locker = new object();
+
+        private DateTime LastCaptchaSolvedOn { get; set; }
+
         public RunDotNetTesseract TesseractService { get; set; }
 
         public AmazonHttpClient() : this(new HttpClientHandler())
@@ -29,6 +32,7 @@ namespace EagleEye.Extractor.Amazon
         public AmazonHttpClient(HttpMessageHandler handler) : base(handler)
         {
             BaseAddress = BaseUri;
+            LastCaptchaSolvedOn = DateTime.Now;
         }
 
         public async Task<List<Department>> GetDepartmentalSectionsAsync(CancellationToken cancellationToken)
@@ -97,21 +101,38 @@ namespace EagleEye.Extractor.Amazon
                 var success = true;
                 AmazonResponseResult result = null;
 
+                var targetUri = uri;
+
                 do
                 {
                     try
                     {
-                        result = await GetAsyncAsHtmlDoc(uri, cancellationToken);
+                        result = await GetAsyncAsHtmlDoc(targetUri, cancellationToken);
                         success = true;
                     }
                     catch (EncounterCaptchaException e)
                     {
                         success = false;
+                        
+                        lock (Locker)
+                        {
+                            var timeDiff = DateTime.Now - LastCaptchaSolvedOn;
 
-                        Log.Information("{Uri}: Encounter Captcha", e.Uri);
+                            // last captcha solved more than 10 seconds ago
+                            if (timeDiff.TotalSeconds > 10)
+                            {
+                                Log.Information("{Uri}: Encounter Captcha", e.Uri);
 
-                        // ensures it will be solved
-                        new SolveCaptcha(this, e.Uri).ExecuteAsync(e.HtmlDocument, cancellationToken).RunSynchronously();
+                                // ensures it will be solved
+                                new SolveCaptcha(this, e.Uri).ExecuteAsync(e.HtmlDocument, cancellationToken).Wait(cancellationToken);
+
+                                targetUri = e.Uri;
+                            }
+                            else
+                            {
+                                Log.Information("{Uri}: Not required to solve Captcha", e.Uri);
+                            }
+                        }
                     }
                 } while (!success);
 

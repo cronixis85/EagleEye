@@ -1,7 +1,6 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Linq;
-using EagleEye.Extractor.Console.Models;
+using EagleEye.Models.Extractor;
 
 namespace EagleEye.Extractor.Console.Extensions
 {
@@ -17,7 +16,7 @@ namespace EagleEye.Extractor.Console.Extensions
             return new Department
             {
                 Name = source.Name,
-                Sections = source.Sections?.ToDbSections().ToList(),
+                Sections = source.Sections?.ToDbSections().ToList()
             };
         }
 
@@ -62,43 +61,8 @@ namespace EagleEye.Extractor.Console.Extensions
             {
                 Name = source.Name,
                 Url = source.Url,
-                Products = source.Products?.ToDbProducts().ToList(),
                 Enabled = true
             };
-        }
-
-        public static IEnumerable<Product> ToDbProducts(this IEnumerable<Amazon.Models.Product> source)
-        {
-            return source.Select(x => x.ToDbProduct());
-        }
-
-        public static Product ToDbProduct(this Amazon.Models.Product source)
-        {
-            var p = new Product
-            {
-                Name = source.Name,
-                Asin = source.Asin,
-                Url = source.Url,
-                Brand = source.Brand,
-                CurrentPrice = source.CurrentPrice,
-                OriginalPrice = source.OriginalPrice,
-                Dimensions = source.Dimensions,
-                ItemWeight = source.ItemWeight,
-                ShippingWeight = source.ShippingWeight,
-                Manufacturer = source.Manufacturer,
-                ModelNumber = source.ModelNumber,
-                Rating = source.Rating,
-                TotalReviews = source.TotalReviews,
-                FirstAvailableOn = source.FirstAvailableOn,
-                Errors = source.Errors,
-                Status = ProductStatus.Pending.ToString(),
-                CreatedOn = DateTime.Now
-            };
-
-            if (source.Rank != null)
-                p.SetRank(source.Rank);
-
-            return p;
         }
     }
 }

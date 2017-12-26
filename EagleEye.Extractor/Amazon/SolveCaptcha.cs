@@ -30,6 +30,8 @@ namespace EagleEye.Extractor.Amazon
                     NextCaptchaPage = doc
                 };
 
+                var tries = 1;
+
                 do
                 {
                     // extract
@@ -41,7 +43,9 @@ namespace EagleEye.Extractor.Amazon
                     if (string.IsNullOrEmpty(answer) || answer.Length < 6)
                         solveResult.NextCaptchaPage = await GetNewCaptchaPageAsync(cancellationToken);
                     else
-                        solveResult = await SubmitCaptchaAnswerAsync(answer, extractResult.HiddenInputs["amzn"], cancellationToken);
+                        solveResult = await SubmitCaptchaAnswerAsync(answer, extractResult.HiddenInputs["amzn"], tries, cancellationToken);
+
+                    tries++;
 
                 } while (!solveResult.Success);
             }
@@ -63,7 +67,7 @@ namespace EagleEye.Extractor.Amazon
                 }
             }
 
-            private async Task<SolveCaptchaResult> SubmitCaptchaAnswerAsync(string captcha, string amzn, CancellationToken cancellationToken)
+            private async Task<SolveCaptchaResult> SubmitCaptchaAnswerAsync(string captcha, string amzn, int tries, CancellationToken cancellationToken)
             {
                 var query = HttpUtility.ParseQueryString(string.Empty);
                 query["amzn"] = amzn;
@@ -79,7 +83,7 @@ namespace EagleEye.Extractor.Amazon
 
                     if (title != null && title.Contains("Robot Check"))
                     {
-                        Log.Information("{Uri}: Solve Captcha Failed", _uriForLogging);
+                        Log.Information("{Uri}: Solve Captcha Failed ({Tries} tries)", _uriForLogging, tries);
 
                         return new SolveCaptchaResult
                         {
@@ -88,7 +92,7 @@ namespace EagleEye.Extractor.Amazon
                         };
                     }
 
-                    Log.Information("{Uri}: Solve Captcha Success", _uriForLogging);
+                    Log.Information("{Uri}: Solve Captcha Success ({Tries} tries)", _uriForLogging, tries);
 
                     return new SolveCaptchaResult
                     {

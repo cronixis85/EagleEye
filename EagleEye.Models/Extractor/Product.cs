@@ -1,11 +1,10 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 using System.Linq;
 using Newtonsoft.Json;
 
-namespace EagleEye.Extractor.Console.Models
+namespace EagleEye.Models.Extractor
 {
     public class Product
     {
@@ -46,20 +45,7 @@ namespace EagleEye.Extractor.Console.Models
 
         public DateTime? FirstAvailableOn { get; set; }
 
-        public string Rank { get; set; }
-
-        public void SetRank(Dictionary<string, int> source)
-        {
-            var rankArr = source
-                .Select(x => new
-                {
-                    category = x.Key,
-                    rank = x.Value
-                })
-                .ToArray();
-
-            Rank = JsonConvert.SerializeObject(rankArr);
-        }
+        public string Rank { get; private set; }
 
         public string Status { get; set; }
 
@@ -72,5 +58,21 @@ namespace EagleEye.Extractor.Console.Models
         public bool HasVariances { get; set; }
 
         public List<ProductVariance> Variances { get; set; }
+
+        public void SetRank(Dictionary<string, int> source)
+        {
+            if (source == null)
+                return;
+
+            var rankArr = source
+                .Select(x => new
+                {
+                    category = x.Key,
+                    rank = x.Value
+                })
+                .ToArray();
+
+            Rank = JsonConvert.SerializeObject(rankArr);
+        }
     }
 }
