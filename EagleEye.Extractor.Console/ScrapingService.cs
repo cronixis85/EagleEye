@@ -38,10 +38,10 @@ namespace EagleEye.Extractor.Console
                 await UpdateProductsAsync(cts.Token);
 
             if (settings.UpdateProductDetails)
-                await UpdateProductsDetailsAsync(cts.Token);
+                await UpdateProductsDetailsAsync(settings, cts.Token);
 
             if (settings.UpdateProductVariances)
-                await UpdateProductVariancesAsync(cts.Token);
+                await UpdateProductVariancesAsync(settings, cts.Token);
         }
 
         private async Task RebuildDatabaseAsync(CancellationToken cancellationToken)
@@ -178,7 +178,7 @@ namespace EagleEye.Extractor.Console
             }
         }
 
-        private async Task UpdateProductsDetailsAsync(CancellationToken cancellationToken)
+        private async Task UpdateProductsDetailsAsync(ScrapeSettings settings, CancellationToken cancellationToken)
         {
             using (var dbContext = _serviceProvider.GetService<ApplicationDbContext>())
             using (var httpClient = _serviceProvider.GetService<AmazonHttpClient>())
@@ -187,9 +187,15 @@ namespace EagleEye.Extractor.Console
 
                 var pendingStatus = ProductStatus.Pending.ToString();
 
-                var products = dbContext.Products
-                                        .Where(x => x.Status == pendingStatus)
-                                        .ToArray();
+                var productsQuery = dbContext.Products
+                                            .Where(x => x.Status == pendingStatus);
+
+                if (settings.EnableProductDetailBatchScraping && settings.BatchSize > -1)
+                    productsQuery = productsQuery
+                        .OrderByDescending(x => x.UpdatedOn)
+                        .Take(settings.BatchSize);
+
+                var products = productsQuery.ToArray();
 
                 var getProductDetailTasks = products
                     .Select(async p =>
@@ -253,7 +259,7 @@ namespace EagleEye.Extractor.Console
             }
         }
 
-        private async Task UpdateProductVariancesAsync(CancellationToken cancellationToken)
+        private async Task UpdateProductVariancesAsync(ScrapeSettings settings, CancellationToken cancellationToken)
         {
             using (var dbContext = _serviceProvider.GetService<ApplicationDbContext>())
             using (var httpClient = _serviceProvider.GetService<AmazonHttpClient>())
@@ -262,9 +268,15 @@ namespace EagleEye.Extractor.Console
 
                 var pendingStatus = ProductStatus.Pending.ToString();
 
-                var variances = dbContext.ProductVariances
-                                         .Where(x => x.Status == pendingStatus)
-                                         .ToArray();
+                var variancesQuery = dbContext.ProductVariances
+                                              .Where(x => x.Status == pendingStatus);
+
+                if (settings.EnableProductDetailBatchScraping && settings.BatchSize > -1)
+                    variancesQuery = variancesQuery
+                        .OrderByDescending(x => x.UpdatedOn)
+                        .Take(settings.BatchSize);
+
+                var variances = variancesQuery.ToArray();
 
                 var getProductVariances = variances
                     .Select(async p =>

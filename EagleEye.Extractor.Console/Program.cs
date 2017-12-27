@@ -21,7 +21,7 @@ namespace EagleEye.Extractor.Console
 
             // setup our DI
             var services = new ServiceCollection()
-                .AddDbContext<ApplicationDbContext>(options => options.UseSqlServer(config["SQLAZURECONNSTR_EagleEyeDb"]), ServiceLifetime.Transient)
+                .AddDbContext<ApplicationDbContext>(options => options.UseSqlServer(config["APPSETTING_AzureWebJobs_EagleEyeDb"]), ServiceLifetime.Transient)
                 .AddScrapingOptions(config)
                 .BuildServiceProvider();
 

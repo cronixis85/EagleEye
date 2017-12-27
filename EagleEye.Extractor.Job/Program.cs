@@ -29,7 +29,7 @@ namespace EagleEye.Extractor.Job
 
             // Your classes that contain the webjob methods need to be DI-ed up too
             var services = new ServiceCollection()
-                .AddDbContext<ApplicationDbContext>(options => options.UseSqlServer(configurations["SQLAZURECONNSTR_EagleEyeDb"]), ServiceLifetime.Transient)
+                .AddDbContext<ApplicationDbContext>(options => options.UseSqlServer(configurations["APPSETTING_AzureWebJobs_EagleEyeDb"]), ServiceLifetime.Transient)
                 .AddScrapingOptions(configurations)
                 .AddTransient<WebJobMethods>()
                 .BuildServiceProvider();

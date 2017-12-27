@@ -8,5 +8,7 @@
         public bool UpdateProducts { get; set; }
         public bool UpdateProductDetails { get; set; }
         public bool UpdateProductVariances { get; set; }
+        public bool EnableProductDetailBatchScraping { get; set; }
+        public int BatchSize { get; set; }
     }
 }
