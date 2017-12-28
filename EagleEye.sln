@@ -17,7 +17,7 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "EagleEye.Extractor.Job", "E
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "EagleEye.Api", "EagleEye.Api\EagleEye.Api.csproj", "{8BD5BD59-24B2-4513-9817-8385EDB3B5CD}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "EagleEye.Models", "EagleEye.Models\EagleEye.Models.csproj", "{055AEFED-7444-44C0-AA51-C0A827A01514}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "EagleEye.Models", "EagleEye.Models\EagleEye.Models.csproj", "{055AEFED-7444-44C0-AA51-C0A827A01514}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
