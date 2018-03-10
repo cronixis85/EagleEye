@@ -14,6 +14,8 @@ tensorflow = "*"
 keras = "*"
 pylint = "*"
 "f99c6de" = {file = "https://pypi.python.org/packages/4c/25/151aeb11e80f99b97d3eb93a2c98bcacd857f28c4fb8865eb0201d800e97/opencv_python-3.4.0.12-cp36-cp36m-win_amd64.whl"}
+"h5py" = "*"
+cython = "*"
 
 
 [dev-packages]

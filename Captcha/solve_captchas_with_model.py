@@ -10,6 +10,7 @@ import pickle
 MODEL_FILENAME = "captcha_model.hdf5"
 MODEL_LABELS_FILENAME = "model_labels.dat"
 CAPTCHA_IMAGE_FOLDER = "generated_captcha_images"
+CAPTCHA_LENGTH = 4
 
 
 # Load up the model labels (so we can translate model predictions to actual letters)
@@ -65,7 +66,7 @@ for image_file in captcha_image_files:
 
     # If we found more or less than 4 letters in the captcha, our letter extraction
     # didn't work correcly. Skip the image instead of saving bad training data!
-    if len(letter_image_regions) != 4:
+    if len(letter_image_regions) != CAPTCHA_LENGTH:
         continue
 
     # Sort the detected letter images based on the x coordinate to make sure
@@ -110,3 +111,5 @@ for image_file in captcha_image_files:
     # Show the annotated image
     cv2.imshow("Output", output)
     cv2.waitKey()
+
+    
