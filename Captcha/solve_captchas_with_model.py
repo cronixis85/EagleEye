@@ -9,8 +9,8 @@ import pickle
 
 MODEL_FILENAME = "captcha_model.hdf5"
 MODEL_LABELS_FILENAME = "model_labels.dat"
-CAPTCHA_IMAGE_FOLDER = "generated_captcha_images"
-CAPTCHA_LENGTH = 4
+CAPTCHA_IMAGE_FOLDER = "amazon_captcha_images"
+CAPTCHA_LENGTH = 6
 
 
 # Load up the model labels (so we can translate model predictions to actual letters)
@@ -24,7 +24,7 @@ model = load_model(MODEL_FILENAME)
 # In the real world, you'd replace this section with code to grab a real
 # CAPTCHA image from a live website.
 captcha_image_files = list(paths.list_images(CAPTCHA_IMAGE_FOLDER))
-captcha_image_files = np.random.choice(captcha_image_files, size=(10,), replace=False)
+# captcha_image_files = np.random.choice(captcha_image_files, size=(10,), replace=False)
 
 # loop over the image paths
 for image_file in captcha_image_files:

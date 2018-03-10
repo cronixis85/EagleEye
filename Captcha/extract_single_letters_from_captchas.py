@@ -5,8 +5,9 @@ import glob
 import imutils
 
 
-CAPTCHA_IMAGE_FOLDER = "generated_captcha_images"
+CAPTCHA_IMAGE_FOLDER = "amazon_captcha_images"
 OUTPUT_FOLDER = "extracted_letter_images"
+CAPTCHA_LENGTH = 6
 
 
 # Get a list of all the captcha images we need to process
@@ -60,7 +61,7 @@ for (i, captcha_image_file) in enumerate(captcha_image_files):
 
     # If we found more or less than 4 letters in the captcha, our letter extraction
     # didn't work correcly. Skip the image instead of saving bad training data!
-    if len(letter_image_regions) != 4:
+    if len(letter_image_regions) != CAPTCHA_LENGTH:
         continue
 
     # Sort the detected letter images based on the x coordinate to make sure
@@ -76,17 +77,20 @@ for (i, captcha_image_file) in enumerate(captcha_image_files):
         # Extract the letter from the original image with a 2-pixel margin around the edge
         letter_image = gray[y - 2:y + h + 2, x - 2:x + w + 2]
 
-        # Get the folder to save the image in
-        save_path = os.path.join(OUTPUT_FOLDER, letter_text)
+        # don't save it if result in empty image
+        if letter_image.size > 0:
+            # Get the folder to save the image in
+            save_path = os.path.join(OUTPUT_FOLDER, letter_text)
 
-        # if the output directory does not exist, create it
-        if not os.path.exists(save_path):
-            os.makedirs(save_path)
+            # if the output directory does not exist, create it
+            if not os.path.exists(save_path):
+                os.makedirs(save_path)
 
-        # write the letter image to a file
-        count = counts.get(letter_text, 1)
-        p = os.path.join(save_path, "{}.png".format(str(count).zfill(6)))
-        cv2.imwrite(p, letter_image)
+            # write the letter image to a file
+            count = counts.get(letter_text, 1)
+            p = os.path.join(save_path, "{}.png".format(str(count).zfill(6)))
 
-        # increment the count for the current key
-        counts[letter_text] = count + 1
+            cv2.imwrite(p, letter_image)
+
+            # increment the count for the current key
+            counts[letter_text] = count + 1
