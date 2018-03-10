@@ -1,3 +1,6 @@
-.vscode
+.vscode/**
+!.vscode/launch.json
+.tmp
 __pycache__
 extracted_letter_images
+node_modules

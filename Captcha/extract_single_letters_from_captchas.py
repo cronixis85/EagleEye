@@ -5,7 +5,7 @@ import glob
 import imutils
 
 
-CAPTCHA_IMAGE_FOLDER = "amazon_captcha_images"
+CAPTCHA_IMAGE_FOLDER = "amazon_training_images"
 OUTPUT_FOLDER = "extracted_letter_images"
 CAPTCHA_LENGTH = 6
 

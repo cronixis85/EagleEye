@@ -9,7 +9,7 @@ import pickle
 
 MODEL_FILENAME = "captcha_model.hdf5"
 MODEL_LABELS_FILENAME = "model_labels.dat"
-CAPTCHA_IMAGE_FOLDER = "amazon_captcha_images"
+CAPTCHA_IMAGE_FOLDER = "amazon_test_images"
 CAPTCHA_LENGTH = 6
 
 
