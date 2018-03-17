@@ -1,0 +1,27 @@
+[[source]]
+
+url = "https://pypi.python.org/simple"
+verify_ssl = true
+name = "pypi"
+
+
+[packages]
+
+imutils = "*"
+opencv-python = "*"
+keras = "*"
+pylint = "*"
+flask = "*"
+
+
+[dev-packages]
+
+sklearn = "*"
+tensorflow = "*"
+cython = "*"
+"h5py" = "*"
+
+
+[requires]
+
+python_version = "3.6"
