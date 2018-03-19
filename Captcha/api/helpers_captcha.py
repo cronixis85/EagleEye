@@ -1,35 +1,33 @@
 from keras.models import load_model
 from helpers import resize_to_fit
-from imutils import paths
+# from imutils import paths
 import numpy as np
 import imutils
 import cv2
 import pickle
+import os 
 
-
-MODEL_FILENAME = "captcha_model.hdf5"
-MODEL_LABELS_FILENAME = "model_labels.dat"
-CAPTCHA_IMAGE_FOLDER = "amazon_test_images"
+DIR_PATH = os.path.dirname(os.path.realpath(__file__))
+MODEL_FILENAME = os.path.join(DIR_PATH, "captcha_model.hdf5")
+MODEL_LABELS_FILENAME = os.path.join(DIR_PATH, "model_labels.dat")
 CAPTCHA_LENGTH = 6
 
+def load_captcha_model_labels():
+    # Load up the model labels (so we can translate model predictions to actual letters)
+    with open(MODEL_LABELS_FILENAME, "rb") as f:
+        lb = pickle.load(f)
+    return lb
 
-# Load up the model labels (so we can translate model predictions to actual letters)
-with open(MODEL_LABELS_FILENAME, "rb") as f:
-    lb = pickle.load(f)
+def load_captcha_model():
+    # Load the trained neural network
+    return load_model(MODEL_FILENAME)
 
-# Load the trained neural network
-model = load_model(MODEL_FILENAME)
-
-# Grab some random CAPTCHA images to test against.
-# In the real world, you'd replace this section with code to grab a real
-# CAPTCHA image from a live website.
-captcha_image_files = list(paths.list_images(CAPTCHA_IMAGE_FOLDER))
-# captcha_image_files = np.random.choice(captcha_image_files, size=(10,), replace=False)
-
-# loop over the image paths
-for image_file in captcha_image_files:
-    # Load the image and convert it to grayscale
+def solve_captcha_file(model, lb, image_file, is_show_output):
     image = cv2.imread(image_file)
+    return solve_captcha_image(model, lb, image, is_show_output)
+
+def solve_captcha_image(model, lb, image, is_show_output):
+    # Load the image and convert it to grayscale
     image = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
 
     # Add some extra padding around the image
@@ -66,8 +64,8 @@ for image_file in captcha_image_files:
 
     # If we found more or less than 4 letters in the captcha, our letter extraction
     # didn't work correcly. Skip the image instead of saving bad training data!
-    if len(letter_image_regions) != CAPTCHA_LENGTH:
-        continue
+    # if len(letter_image_regions) != CAPTCHA_LENGTH:
+    #     continue
 
     # Sort the detected letter images based on the x coordinate to make sure
     # we are processing them from left-to-right so we match the right image
@@ -101,15 +99,17 @@ for image_file in captcha_image_files:
         predictions.append(letter)
 
         # draw the prediction on the output image
-        cv2.rectangle(output, (x - 2, y - 2), (x + w + 4, y + h + 4), (0, 255, 0), 1)
-        cv2.putText(output, letter, (x - 5, y - 5), cv2.FONT_HERSHEY_SIMPLEX, 0.55, (0, 255, 0), 2)
+        if is_show_output:
+            cv2.rectangle(output, (x - 2, y - 2), (x + w + 4, y + h + 4), (0, 255, 0), 1)
+            cv2.putText(output, letter, (x - 5, y - 5), cv2.FONT_HERSHEY_SIMPLEX, 0.55, (0, 255, 0), 2)
 
     # Print the captcha's text
     captcha_text = "".join(predictions)
-    print("CAPTCHA text is: {}".format(captcha_text))
+    # print("CAPTCHA text is: {}".format(captcha_text))
 
     # Show the annotated image
-    cv2.imshow("Output", output)
-    cv2.waitKey()
+    if is_show_output:
+        cv2.imshow("Output", output)
+        cv2.waitKey()
 
-    
+    return captcha_text

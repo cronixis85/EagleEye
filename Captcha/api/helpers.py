@@ -1,6 +1,8 @@
 import imutils
 import cv2
-
+import numpy as np
+from urllib import request
+import io
 
 def resize_to_fit(image, width, height):
     """
@@ -37,3 +39,13 @@ def resize_to_fit(image, width, height):
 
     # return the pre-processed image
     return image
+
+def url_to_cv2_image(url):
+    resp = request.urlopen(url)
+    image = np.asarray(bytearray(resp.read()), dtype="uint8")
+    image = cv2.imdecode(image, cv2.IMREAD_COLOR)
+    return image
+
+def cv2_image_to_bytes(image):
+    image = cv2.imencode('.jpg', image)[1].tostring()
+    return io.BytesIO(image)
