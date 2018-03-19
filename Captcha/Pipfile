@@ -13,14 +13,12 @@ keras = "*"
 pylint = "*"
 flask = "*"
 numpy = "*"
-
-
-[dev-packages]
-
 sklearn = "*"
 tensorflow = "*"
 cython = "*"
 "h5py" = "*"
+
+[dev-packages]
 
 
 [requires]

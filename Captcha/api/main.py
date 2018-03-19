@@ -4,9 +4,9 @@ from flask import Flask, request, send_file
 
 app = Flask(__name__)
 
-# @app.route('/')
-# def hello_world():
-#   return 'Hello, World!'
+@app.route('/health')
+def health():
+  return 'OK'
 
 @app.route('/', methods = ['POST'])
 def solve():
